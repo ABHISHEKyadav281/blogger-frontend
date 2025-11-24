@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Heart, 
   MessageCircle, 
@@ -9,45 +10,18 @@ import {
   Tag,
   Clock
 } from 'lucide-react';
-
-interface BlogPost {
-  id: string;
-  title: string;
-  content: string;
-  author: {
-    username: string;
-    avatar: string;
-    isSubscribed: boolean;
-  };
-  publishDate: string;
-  readTime: string;
-  category: string;
-  tags: string[];
-  stats: {
-    likes: number;
-    comments: number;
-    views: number;
-    isLiked: boolean;
-    isBookmarked: boolean;
-  };
-  coverImage: string;
-}
+import { useAppDispatch } from '../../redux/slices/hooks';
+import { toggleLike, toggleBookmark, toggleSubscribe } from '../../redux/slices/postsListSlice';
+import type { BlogPost } from '../../types';
 
 interface BlogPreviewCardProps {
   post: BlogPost;
-  onLike: (postId: string) => void;
-  onBookmark: (postId: string) => void;
-  onSubscribe: (authorName: string) => void;
-  onViewPost: (postId: string) => void;
 }
 
-const BlogPreviewCard: React.FC<BlogPreviewCardProps> = ({ 
-  post, 
-  onLike, 
-  onBookmark, 
-  onSubscribe, 
-  onViewPost 
-}) => {
+const BlogPreviewCard: React.FC<BlogPreviewCardProps> = ({ post }) => {
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+
   // Function to truncate content for preview
   const truncateContent = (content: string, maxLength: number = 150) => {
     return content.length > maxLength 
@@ -66,7 +40,7 @@ const BlogPreviewCard: React.FC<BlogPreviewCardProps> = ({
     ) {
       return;
     }
-    onViewPost(post.id);
+    navigate(`/post/${post.id}`);
   };
 
   return (
@@ -119,7 +93,7 @@ const BlogPreviewCard: React.FC<BlogPreviewCardProps> = ({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onSubscribe(post.author?.name);
+              dispatch(toggleSubscribe(post.id));
             }}
             className={`px-4 py-2 rounded-full font-medium transition-all duration-300 text-sm ${
               post.author?.isSubscribed
@@ -165,7 +139,7 @@ const BlogPreviewCard: React.FC<BlogPreviewCardProps> = ({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                onLike(post.id);
+                dispatch(toggleLike(post.id));
               }}
               className={`flex items-center space-x-2 px-3 py-2 rounded-full transition-all duration-300 ${
                 post.stats?.isLiked
@@ -201,7 +175,7 @@ const BlogPreviewCard: React.FC<BlogPreviewCardProps> = ({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                onBookmark(post.id);
+                dispatch(toggleBookmark(post.id));
               }}
               className={`p-2 rounded-full transition-all duration-300 ${
                 post.stats?.isBookmarked
@@ -219,7 +193,7 @@ const BlogPreviewCard: React.FC<BlogPreviewCardProps> = ({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onViewPost(post.id);
+              navigate(`/post/${post.id}`);
             }}
             className="w-full py-2 px-4 bg-white/5 hover:bg-white/10 border border-white/20 rounded-xl font-medium text-white transition-all duration-300 hover:border-pink-400/50"
           >

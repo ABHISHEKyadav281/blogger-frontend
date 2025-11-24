@@ -66,7 +66,12 @@ export const fetchPosts = createAsyncThunk(
             if (search) params.search = search;
 
             const response = await api.get('/post/v1/allposts', { params });
-            return response.data;
+            console.log('📡 Full API Response:', response);
+            console.log('📡 Response Keys:', Object.keys(response));
+            console.log('📡 Response.data:', response.data);
+            console.log('📡 Response.content:', response.content);
+            console.log('📡 Response.posts:', response.posts);
+            return response;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message || 'Failed to fetch posts');
         }

@@ -1,3 +1,18 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Star, List, Grid3X3, Filter, TrendingUp } from 'lucide-react';
+import { useAppDispatch, useAppSelector } from '../redux/slices/hooks';
+import {
+  fetchPosts,
+  resetPosts,
+  toggleLike,
+  toggleBookmark,
+  toggleSubscribe,
+} from '../redux/slices/postsListSlice';
+import { setModal } from '../redux/slices/uiSlice';
+import BlogPreviewCard from '../components/blog/BlogPreviewCard';
+
+const Sidebar: React.FC = () => {
   const { isAuthenticated } = useAppSelector((state) => state.auth);
 
   const categories = [
@@ -13,14 +28,6 @@
     '#AttackOnTitan', '#OnePiece', '#DemonSlayer', '#JujutsuKaisen',
     '#MyHeroAcademia', '#DragonBall', '#Naruto', '#StudioGhibli'
   ];
-
-  // const handleCreatePost = () => {
-  //   if (!isAuthenticated) {
-  //     dispatch(setModal({ modal: 'login', value: true }));
-  //     return;
-  //   }
-  //   dispatch(setModal({ modal: 'createPost', value: true }));
-  // };
 
   return (
     <aside className="w-72 bg-black/20 backdrop-blur-xl border-r border-white/10 h-screen fixed top-16 overflow-y-auto">
@@ -74,8 +81,8 @@ const HomePage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   
-  // ✅ Redux state with proper null safety
-  const postsState = useAppSelector((state) => state?.posts);
+  // ✅ Redux state with proper null safety - FIXED: use postsList instead of posts
+  const postsState = useAppSelector((state) => state?.postsList);
   const posts = postsState?.posts || [];
   const isLoading = postsState?.isLoading || false;
   const error = postsState?.error || null;
@@ -133,42 +140,12 @@ const HomePage: React.FC = () => {
     [isLoading, hasMore, currentPage, dispatch]
   );
 
-  // Action handlers
-  const handleLikePost = (postId: string) => {
-    if (!isAuthenticated) {
-      dispatch(setModal({ modal: 'login', value: true }));
-      return;
-    }
-    dispatch(toggleLike(postId));
-  };
-
-  const handleBookmarkPost = (postId: string) => {
-    if (!isAuthenticated) {
-      dispatch(setModal({ modal: 'login', value: true }));
-      return;
-    }
-    dispatch(toggleBookmark(postId));
-  };
-
-  const handleSubscribe = (authorName: string) => {
-    if (!isAuthenticated) {
-      dispatch(setModal({ modal: 'login', value: true }));
-      return;
-    }
-    dispatch(toggleSubscribe(authorName));
-  };
-
-  const handleViewPost = (postId: string) => {
-    // dispatch(incrementViews(postId));
-    navigate(`/post/${postId}`);
-  };
-
   const handleCreatePost = () => {
     if (!isAuthenticated) {
       dispatch(setModal({ modal: 'login', value: true }));
       return;
     }
-    dispatch(setModal({ modal: 'createPost', value: true }));
+    navigate('/create-post');
   };
 
   // ✅ Initial Loading state
@@ -295,25 +272,12 @@ const HomePage: React.FC = () => {
                     if (posts.length === index + 1) {
                       return (
                         <div ref={lastPostElementRef} key={post.id}>
-                          <BlogPreviewCard
-                            post={post}
-                            onLike={handleLikePost}
-                            onBookmark={handleBookmarkPost}
-                            onSubscribe={handleSubscribe}
-                            onViewPost={handleViewPost}
-                          />
+                          <BlogPreviewCard post={post} />
                         </div>
                       );
                     }
                     return (
-                      <BlogPreviewCard
-                        key={post.id}
-                        post={post}
-                        onLike={handleLikePost}
-                        onBookmark={handleBookmarkPost}
-                        onSubscribe={handleSubscribe}
-                        onViewPost={handleViewPost}
-                      />
+                      <BlogPreviewCard key={post.id} post={post} />
                     );
                   })}
                 </div>

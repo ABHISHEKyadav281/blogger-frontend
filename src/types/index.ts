@@ -12,6 +12,7 @@ export interface User {
     followers: number;
     following: number;
   };
+  isSubscribed?: boolean;
 }
 
 export interface BlogPost {

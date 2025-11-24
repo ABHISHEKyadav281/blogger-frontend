@@ -11,8 +11,9 @@ export const useAuth = () => {
   return useAppSelector((state) => state.auth);
 };
 
+// Custom hook to access posts state
 export const usePosts = () => {
-  return useAppSelector((state) => state.posts);
+  return useAppSelector((state) => state.postsList);
 };
 
 export const useNotifications = () => {
