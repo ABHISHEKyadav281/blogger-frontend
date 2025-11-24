@@ -1,0 +1,923 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { 
+  ArrowLeft, 
+  Save, 
+  Eye, 
+  Send, 
+  Image, 
+  Video, 
+  Link, 
+  Bold, 
+  Italic, 
+  Underline,
+  List,
+  Hash,
+  Quote,
+  Code,
+  Smile,
+  Tag,
+  Calendar,
+  Clock,
+  Globe,
+  Lock,
+  Users,
+  AlertCircle,
+  X,
+  Upload,
+  FileText,
+  Settings,
+  Sparkles,
+  Trash2,
+} from 'lucide-react';
+
+interface PostData {
+  title: string;
+  content: string;
+  excerpt: string;
+  coverImage: string;
+  category: string;
+  tags: string[];
+  status: 'draft' | 'published' | 'scheduled';
+  visibility: 'public' | 'private' | 'followers';
+  publishDate?: string;
+  allowComments: boolean;
+  featured: boolean;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  description: string;
+  color: string;
+}
+
+interface MediaItem {
+  id: string;
+  url: string;
+  type: 'image' | 'video';
+  name: string;
+  size: number;
+}
+
+const categories: Category[] = [
+  { id: '1', name: 'Anime Reviews', description: 'In-depth anime series and movie reviews', color: 'from-pink-500 to-red-500' },
+  { id: '2', name: 'Manga Discussion', description: 'Manga analysis and discussions', color: 'from-blue-500 to-cyan-500' },
+  { id: '3', name: 'Character Analysis', description: 'Deep dives into character development', color: 'from-purple-500 to-violet-500' },
+  { id: '4', name: 'Industry News', description: 'Latest anime industry updates', color: 'from-green-500 to-emerald-500' },
+  { id: '5', name: 'Studio Spotlights', description: 'Focusing on animation studios', color: 'from-yellow-500 to-orange-500' },
+  { id: '6', name: 'Technical Analysis', description: 'Animation and production breakdowns', color: 'from-indigo-500 to-blue-600' }
+];
+
+const popularTags = [
+  'AttackOnTitan', 'OnePiece', 'DemonSlayer', 'JujutsuKaisen', 'MyHeroAcademia',
+  'Naruto', 'DragonBall', 'StudioGhibli', 'MAPPA', 'WITStudio', 'Toei',
+  'Shonen', 'Seinen', 'Shoujo', 'Isekai', 'Mecha', 'Romance', 'Action',
+  'Comedy', 'Drama', 'Thriller', 'Horror', 'Slice of Life'
+];
+
+const RichTextEditor: React.FC<{
+  content: string;
+  onChange: (content: string) => void;
+  placeholder?: string;
+}> = ({ content, onChange, placeholder = "Start writing your anime blog post..." }) => {
+  const editorRef = useRef<HTMLTextAreaElement>(null);
+  const [selectedText, setSelectedText] = useState('');
+  const [showToolbar, setShowToolbar] = useState(true);
+  const [wordCount, setWordCount] = useState(0);
+  const [readingTime, setReadingTime] = useState(0);
+
+  useEffect(() => {
+    const words = content.split(/\s+/).filter(word => word.length > 0).length;
+    setWordCount(words);
+    setReadingTime(Math.max(1, Math.ceil(words / 200))); // Average reading speed
+  }, [content]);
+
+  const insertText = (before: string, after: string = '') => {
+    const textarea = editorRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = content.substring(start, end);
+    const newText = content.substring(0, start) + before + selectedText + after + content.substring(end);
+    
+    onChange(newText);
+    
+    // Restore cursor position
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + before.length, end + before.length);
+    }, 0);
+  };
+
+  const toolbarActions = [
+    { icon: Bold, action: () => insertText('**', '**'), title: 'Bold' },
+    { icon: Italic, action: () => insertText('*', '*'), title: 'Italic' },
+    { icon: Underline, action: () => insertText('<u>', '</u>'), title: 'Underline' },
+    { icon: Hash, action: () => insertText('\n## '), title: 'Heading' },
+    { icon: List, action: () => insertText('\n- '), title: 'List' },
+    { icon: Quote, action: () => insertText('\n> '), title: 'Quote' },
+    { icon: Code, action: () => insertText('`', '`'), title: 'Code' },
+    { icon: Link, action: () => insertText('[', '](url)'), title: 'Link' }
+  ];
+
+  return (
+    <div className="bg-white/5 border border-white/20 rounded-2xl overflow-hidden">
+      {/* Toolbar */}
+      {showToolbar && (
+        <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
+          <div className="flex items-center space-x-2">
+            {toolbarActions.map((tool, index) => (
+              <button
+                key={index}
+                onClick={tool.action}
+                title={tool.title}
+                className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+              >
+                <tool.icon className="w-4 h-4" />
+              </button>
+            ))}
+            <div className="h-4 w-px bg-white/20 mx-2" />
+            <button className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-all">
+              <Image className="w-4 h-4" />
+            </button>
+            <button className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-all">
+              <Video className="w-4 h-4" />
+            </button>
+            <button className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-all">
+              <Smile className="w-4 h-4" />
+            </button>
+          </div>
+          
+          <div className="flex items-center space-x-4 text-sm text-gray-400">
+            <span>{wordCount} words</span>
+            <span>{readingTime} min read</span>
+            <button
+              onClick={() => setShowToolbar(false)}
+              className="p-1 hover:text-white transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!showToolbar && (
+        <button
+          onClick={() => setShowToolbar(true)}
+          className="absolute top-4 right-4 z-10 p-2 bg-black/50 hover:bg-black/70 text-white rounded-lg transition-all"
+        >
+          <Settings className="w-4 h-4" />
+        </button>
+      )}
+
+      {/* Editor */}
+      <div className="relative">
+        <textarea
+          ref={editorRef}
+          value={content}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full min-h-96 p-6 bg-transparent text-white placeholder-gray-400 focus:outline-none resize-none font-mono leading-relaxed"
+          style={{ lineHeight: '1.8' }}
+        />
+        
+        {/* Character limit indicator */}
+        <div className="absolute bottom-4 right-4 text-xs text-gray-500 bg-black/30 px-2 py-1 rounded">
+          {content.length}/10000
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Media Upload Component
+const MediaUpload: React.FC<{
+  onUpload: (files: FileList) => void;
+  accept?: string;
+  multiple?: boolean;
+}> = ({ onUpload, accept = "image/*,video/*", multiple = true }) => {
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    if (e.dataTransfer.files.length > 0) {
+      onUpload(e.dataTransfer.files);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      onUpload(e.target.files);
+    }
+  };
+
+  return (
+    <div
+      className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all ${
+        dragOver 
+          ? 'border-pink-400 bg-pink-500/10' 
+          : 'border-white/20 hover:border-white/40 hover:bg-white/5'
+      }`}
+      onDrop={handleDrop}
+      onDragOver={(e) => {e.preventDefault(); setDragOver(true);}}
+      onDragLeave={() => setDragOver(false)}
+    >
+      <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+      <h3 className="text-lg font-semibold text-white mb-2">Upload Media</h3>
+      <p className="text-gray-400 mb-4">Drag & drop images or videos, or click to browse</p>
+      <button
+        onClick={() => fileInputRef.current?.click()}
+        className="px-6 py-3 bg-gradient-to-r from-pink-500 to-violet-500 text-white font-medium rounded-xl hover:shadow-lg transition-all"
+      >
+        Choose Files
+      </button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={accept}
+        multiple={multiple}
+        onChange={handleFileSelect}
+        className="hidden"
+      />
+    </div>
+  );
+};
+
+const PostPreview: React.FC<{ postData: PostData }> = ({ postData }) => {
+  const formatContent = (content: string) => {
+    return content
+      .split('\n')
+      .map((line, index) => {
+        if (line.startsWith('## ')) {
+          return <h2 key={index} className="text-2xl font-bold text-white mb-4">{line.replace('## ', '')}</h2>;
+        }
+        if (line.startsWith('### ')) {
+          return <h3 key={index} className="text-xl font-semibold text-white mb-3">{line.replace('### ', '')}</h3>;
+        }
+        if (line.startsWith('> ')) {
+          return <blockquote key={index} className="border-l-4 border-pink-500 pl-4 text-gray-300 italic mb-4">{line.replace('> ', '')}</blockquote>;
+        }
+        if (line.startsWith('- ')) {
+          return <li key={index} className="text-gray-300 mb-2 ml-4">{line.replace('- ', '')}</li>;
+        }
+        if (line.trim() === '') {
+          return <br key={index} />;
+        }
+        
+        // Handle inline formatting
+        let formatted = line
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+          .replace(/`(.*?)`/g, '<code class="bg-white/10 px-1 rounded">$1</code>');
+        
+        return <p key={index} className="text-gray-300 mb-4 leading-relaxed" dangerouslySetInnerHTML={{ __html: formatted }} />;
+      });
+  };
+
+  const selectedCategory = categories.find(cat => cat.id === postData.category);
+
+  return (
+    <div className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 overflow-hidden">
+      {/* Cover Image */}
+      {postData.coverImage && (
+        <div className="relative h-64 overflow-hidden">
+          <img src={postData.coverImage} alt={postData.title} className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+          <div className="absolute bottom-4 left-4">
+            {selectedCategory && (
+              <span className={`px-3 py-1 bg-gradient-to-r ${selectedCategory.color} text-white text-sm font-medium rounded-full`}>
+                {selectedCategory.name}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="p-6 md:p-8">
+        {/* Title */}
+        <h1 className="text-3xl font-bold text-white mb-4 leading-tight">
+          {postData.title || 'Your Post Title'}
+        </h1>
+
+        {/* Excerpt */}
+        {postData.excerpt && (
+          <p className="text-xl text-gray-300 mb-6 leading-relaxed">
+            {postData.excerpt}
+          </p>
+        )}
+
+        {/* Meta */}
+        <div className="flex flex-wrap items-center gap-4 mb-8 text-sm text-gray-400">
+          <span className="flex items-center space-x-1">
+            <Calendar className="w-4 h-4" />
+            <span>{new Date().toLocaleDateString()}</span>
+          </span>
+          <span className="flex items-center space-x-1">
+            <Clock className="w-4 h-4" />
+            <span>{Math.max(1, Math.ceil(postData.content.split(' ').length / 200))} min read</span>
+          </span>
+          <span className="flex items-center space-x-1">
+            <Eye className="w-4 h-4" />
+            <span>Preview Mode</span>
+          </span>
+        </div>
+
+        {/* Content */}
+        <div className="prose prose-invert max-w-none mb-8">
+          {postData.content ? formatContent(postData.content) : (
+            <p className="text-gray-500 italic">Start writing to see your content preview...</p>
+          )}
+        </div>
+
+        {/* Tags */}
+        {postData.tags.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {postData.tags.map((tag, index) => (
+              <span
+                key={index}
+                className="px-3 py-1 bg-white/10 text-gray-400 rounded-full text-sm flex items-center space-x-1"
+              >
+                <Tag className="w-3 h-3" />
+                <span>#{tag}</span>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const CreatePost: React.FC = () => {
+  const [currentTab, setCurrentTab] = useState<'write' | 'preview' | 'settings'>('write');
+  const [postData, setPostData] = useState<PostData>({
+    title: '',
+    content: '',
+    excerpt: '',
+    coverImage: '',
+    category: '',
+    tags: [],
+    status: 'draft',
+    visibility: 'public',
+    allowComments: true,
+    featured: false
+  });
+  
+  const [newTag, setNewTag] = useState('');
+  const [showTagSuggestions, setShowTagSuggestions] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [showExitModal, setShowExitModal] = useState(false);
+
+  const tagSuggestions = popularTags.filter(tag => 
+    tag.toLowerCase().includes(newTag.toLowerCase()) &&
+    !postData.tags.includes(tag)
+  );
+
+  const handleSave = async (status: 'draft' | 'published' = 'draft') => {
+    if (status === 'draft') setSaving(true);
+    else setPublishing(true);
+
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    console.log('Saving post:', { ...postData, status });
+    
+    if (status === 'published') {
+      alert('Post published successfully! 🎉');
+    } else {
+      alert('Draft saved! 💾');
+    }
+    
+    setSaving(false);
+    setPublishing(false);
+  };
+
+  const addTag = (tag: string) => {
+    if (tag.trim() && !postData.tags.includes(tag.trim())) {
+      setPostData(prev => ({
+        ...prev,
+        tags: [...prev.tags, tag.trim()]
+      }));
+    }
+    setNewTag('');
+    setShowTagSuggestions(false);
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setPostData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(tag => tag !== tagToRemove)
+    }));
+  };
+
+  const handleMediaUpload = (files: FileList) => {
+    Array.from(files).forEach(file => {
+      console.log('Uploading file:', file.name);
+    });
+  };
+
+  const isFormValid = postData.title.trim() && postData.content.trim() && postData.category;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-pink-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+      </div>
+
+      <div className="relative z-10">
+        <header className="sticky top-0 z-50 bg-black/20 backdrop-blur-xl border-b border-white/10">
+          <div className="max-w-7xl mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-6">
+                <button
+                  onClick={() => setShowExitModal(true)}
+                  className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                  <span>Back</span>
+                </button>
+                
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-gradient-to-r from-pink-500 to-violet-500 rounded-xl">
+                    <Sparkles className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-xl font-bold text-white">Create New Post</h1>
+                    <p className="text-gray-400 text-sm">Share your anime insights with the community</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2 text-sm">
+                  <div className={`w-2 h-2 rounded-full ${saving ? 'bg-yellow-400' : publishing ? 'bg-green-400' : 'bg-gray-400'}`} />
+                  <span className="text-gray-400">
+                    {saving ? 'Saving...' : publishing ? 'Publishing...' : 'All changes saved'}
+                  </span>
+                </div>
+
+                <button
+                  onClick={() => handleSave('draft')}
+                  disabled={saving || publishing}
+                  className="flex items-center space-x-2 px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-xl transition-all disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{saving ? 'Saving...' : 'Save Draft'}</span>
+                </button>
+
+                <button
+                  onClick={() => handleSave('published')}
+                  disabled={!isFormValid || saving || publishing}
+                  className="flex items-center space-x-2 px-6 py-2 bg-gradient-to-r from-pink-500 to-violet-500 text-white font-medium rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>{publishing ? 'Publishing...' : 'Publish'}</span>
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex space-x-1 mt-4 bg-white/5 rounded-xl p-1 w-fit">
+              {[
+                { id: 'write', label: 'Write', icon: FileText },
+                { id: 'preview', label: 'Preview', icon: Eye },
+                { id: 'settings', label: 'Settings', icon: Settings }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setCurrentTab(tab.id as any)}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all ${
+                    currentTab === tab.id
+                      ? 'bg-gradient-to-r from-pink-500 to-violet-500 text-white'
+                      : 'text-gray-400 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  <tab.icon className="w-4 h-4" />
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </header>
+
+        <main className="max-w-7xl mx-auto px-6 py-8">
+          {currentTab === 'write' && (
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+              <div className="xl:col-span-2 space-y-6">
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Enter your post title..."
+                    value={postData.title}
+                    onChange={(e) => setPostData(prev => ({ ...prev, title: e.target.value }))}
+                    className="w-full text-3xl font-bold bg-transparent text-white placeholder-gray-400 focus:outline-none border-none"
+                  />
+                </div>
+                
+                <div>
+                  <textarea
+                    placeholder="Write a compelling excerpt (optional)..."
+                    value={postData.excerpt}
+                    onChange={(e) => setPostData(prev => ({ ...prev, excerpt: e.target.value }))}
+                    rows={3}
+                    className="w-full text-lg bg-white/5 border border-white/20 rounded-xl p-4 text-white placeholder-gray-400 focus:outline-none focus:border-pink-400 resize-none"
+                  />
+                </div>
+
+                <RichTextEditor
+                  content={postData.content}
+                  onChange={(content) => setPostData(prev => ({ ...prev, content }))}
+                />
+
+                {/* Media Upload */}
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-4">Media</h3>
+                  <MediaUpload onUpload={handleMediaUpload} />
+                </div>
+              </div>
+
+              {/* Sidebar */}
+              <div className="space-y-6">
+                {/* Cover Image */}
+                <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4">Cover Image</h3>
+                  <div className="space-y-4">
+                    <input
+                      type="url"
+                      placeholder="Enter image URL..."
+                      value={postData.coverImage}
+                      onChange={(e) => setPostData(prev => ({ ...prev, coverImage: e.target.value }))}
+                      className="w-full p-3 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-pink-400"
+                    />
+                    {postData.coverImage && (
+                      <img 
+                        src={postData.coverImage} 
+                        alt="Cover preview" 
+                        className="w-full h-32 object-cover rounded-xl"
+                      />
+                    )}
+                  </div>
+                </div>
+
+                {/* Category */}
+                <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4">Category</h3>
+                  <div className="space-y-3">
+                    {categories.map((category) => (
+                      <label
+                        key={category.id}
+                        className={`flex items-center p-3 rounded-xl cursor-pointer transition-all ${
+                          postData.category === category.id
+                            ? 'bg-gradient-to-r from-pink-500/20 to-violet-500/20 border border-pink-500/30'
+                            : 'bg-white/5 hover:bg-white/10 border border-white/10'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="category"
+                          value={category.id}
+                          checked={postData.category === category.id}
+                          onChange={(e) => setPostData(prev => ({ ...prev, category: e.target.value }))}
+                          className="sr-only"
+                        />
+                        <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${category.color} mr-3`} />
+                        <div>
+                          <div className="font-medium text-white">{category.name}</div>
+                          <div className="text-sm text-gray-400">{category.description}</div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Tags */}
+                <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4">Tags</h3>
+                  
+                  {/* Current Tags */}
+                  {postData.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {postData.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="flex items-center space-x-1 bg-pink-500/20 text-pink-300 px-3 py-1 rounded-full text-sm"
+                        >
+                          <span>#{tag}</span>
+                          <button
+                            onClick={() => removeTag(tag)}
+                            className="text-pink-400 hover:text-pink-300"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add Tag */}
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Add tags..."
+                      value={newTag}
+                      onChange={(e) => {
+                        setNewTag(e.target.value);
+                        setShowTagSuggestions(e.target.value.length > 0);
+                      }}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addTag(newTag);
+                        }
+                      }}
+                      className="w-full p-3 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-pink-400"
+                    />
+
+                    {/* Tag Suggestions */}
+                    {showTagSuggestions && tagSuggestions.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-black/90 backdrop-blur-xl rounded-xl border border-white/20 shadow-2xl max-h-48 overflow-y-auto z-10">
+                        {tagSuggestions.slice(0, 10).map((tag) => (
+                          <button
+                            key={tag}
+                            onClick={() => addTag(tag)}
+                            className="w-full text-left px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-all first:rounded-t-xl last:rounded-b-xl"
+                          >
+                            #{tag}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Popular Tags */}
+                  <div className="mt-4">
+                    <p className="text-sm text-gray-400 mb-2">Popular tags:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {popularTags.slice(0, 8).map((tag) => (
+                        <button
+                          key={tag}
+                          onClick={() => addTag(tag)}
+                          disabled={postData.tags.includes(tag)}
+                          className="px-2 py-1 bg-white/5 hover:bg-pink-500/20 text-gray-400 hover:text-pink-300 rounded text-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          #{tag}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {currentTab === 'preview' && (
+            <div className="max-w-4xl mx-auto">
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-white mb-2">Post Preview</h2>
+                <p className="text-gray-400">This is how your post will appear to readers</p>
+              </div>
+              <PostPreview postData={postData} />
+            </div>
+          )}
+
+          {currentTab === 'settings' && (
+            <div className="max-w-2xl mx-auto space-y-8">
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-2">Post Settings</h2>
+                <p className="text-gray-400">Configure publishing options and visibility</p>
+              </div>
+
+              {/* Publishing Settings */}
+              <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6">
+                <h3 className="text-xl font-semibold text-white mb-6">Publishing</h3>
+                
+                <div className="space-y-6">
+                  {/* Status */}
+                  <div>
+                    <label className="block text-white font-medium mb-3">Status</label>
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { value: 'draft', label: 'Draft', desc: 'Only visible to you', icon: FileText },
+                        { value: 'published', label: 'Published', desc: 'Live for everyone', icon: Globe },
+                        { value: 'scheduled', label: 'Scheduled', desc: 'Publish later', icon: Calendar }
+                      ].map((status) => (
+                        <label
+                          key={status.value}
+                          className={`flex flex-col p-4 rounded-xl cursor-pointer transition-all ${
+                            postData.status === status.value
+                              ? 'bg-gradient-to-r from-pink-500/20 to-violet-500/20 border border-pink-500/30'
+                              : 'bg-white/5 hover:bg-white/10 border border-white/10'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="status"
+                            value={status.value}
+                            checked={postData.status === status.value}
+                            onChange={(e) => setPostData(prev => ({ ...prev, status: e.target.value as any }))}
+                            className="sr-only"
+                          />
+                          <status.icon className="w-6 h-6 text-pink-400 mb-2" />
+                          <span className="font-medium text-white">{status.label}</span>
+                          <span className="text-xs text-gray-400">{status.desc}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Publish Date (if scheduled) */}
+                  {postData.status === 'scheduled' && (
+                    <div>
+                      <label className="block text-white font-medium mb-3">Publish Date</label>
+                      <input
+                        type="datetime-local"
+                        value={postData.publishDate || ''}
+                        onChange={(e) => setPostData(prev => ({ ...prev, publishDate: e.target.value }))}
+                        className="w-full p-3 bg-white/5 border border-white/20 rounded-xl text-white focus:outline-none focus:border-pink-400"
+                      />
+                    </div>
+                  )}
+
+                  {/* Visibility */}
+                  <div>
+                    <label className="block text-white font-medium mb-3">Visibility</label>
+                    <div className="space-y-3">
+                      {[
+                        { value: 'public', label: 'Public', desc: 'Anyone can read this post', icon: Globe },
+                        { value: 'followers', label: 'Followers Only', desc: 'Only your followers can read', icon: Users },
+                        { value: 'private', label: 'Private', desc: 'Only you can read this post', icon: Lock }
+                      ].map((visibility) => (
+                        <label
+                          key={visibility.value}
+                          className={`flex items-center p-3 rounded-xl cursor-pointer transition-all ${
+                            postData.visibility === visibility.value
+                              ? 'bg-gradient-to-r from-pink-500/20 to-violet-500/20 border border-pink-500/30'
+                              : 'bg-white/5 hover:bg-white/10 border border-white/10'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="visibility"
+                            value={visibility.value}
+                            checked={postData.visibility === visibility.value}
+                            onChange={(e) => setPostData(prev => ({ ...prev, visibility: e.target.value as any }))}
+                            className="sr-only"
+                          />
+                          <visibility.icon className="w-5 h-5 text-pink-400 mr-3" />
+                          <div>
+                            <div className="font-medium text-white">{visibility.label}</div>
+                            <div className="text-sm text-gray-400">{visibility.desc}</div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Interaction Settings */}
+              <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6">
+                <h3 className="text-xl font-semibold text-white mb-6">Interaction</h3>
+                
+                <div className="space-y-4">
+                  <label className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
+                    <div>
+                      <div className="font-medium text-white">Allow Comments</div>
+                      <div className="text-sm text-gray-400">Readers can comment on this post</div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={postData.allowComments}
+                        onChange={(e) => setPostData(prev => ({ ...prev, allowComments: e.target.checked }))}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-500"></div>
+                    </label>
+                  </label>
+
+                  <label className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
+                    <div>
+                      <div className="font-medium text-white">Featured Post</div>
+                      <div className="text-sm text-gray-400">Show this post prominently on your profile</div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={postData.featured}
+                        onChange={(e) => setPostData(prev => ({ ...prev, featured: e.target.checked }))}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-500"></div>
+                    </label>
+                  </label>
+                </div>
+              </div>
+
+              {/* SEO Settings */}
+              <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6">
+                <h3 className="text-xl font-semibold text-white mb-6">SEO & Metadata</h3>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-white font-medium mb-2">Meta Description</label>
+                    <textarea
+                      placeholder="Brief description for search engines (160 characters max)"
+                      rows={3}
+                      maxLength={160}
+                      className="w-full p-3 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-pink-400 resize-none"
+                    />
+                    <div className="text-xs text-gray-400 mt-1">0/160 characters</div>
+                  </div>
+
+                  <div>
+                    <label className="block text-white font-medium mb-2">Canonical URL</label>
+                    <input
+                      type="url"
+                      placeholder="https://example.com/original-post"
+                      className="w-full p-3 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-pink-400"
+                    />
+                    <div className="text-xs text-gray-400 mt-1">Set if this content was published elsewhere first</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Danger Zone */}
+              <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6">
+                <h3 className="text-xl font-semibold text-red-400 mb-6">Danger Zone</h3>
+                
+                <div className="space-y-4">
+                  <button className="w-full flex items-center justify-center space-x-2 p-3 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-400 rounded-xl transition-all">
+                    <Trash2 className="w-5 h-5" />
+                    <span>Delete Draft</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+
+      {/* Exit Modal */}
+      {showExitModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-black/90 backdrop-blur-xl rounded-2xl border border-white/20 p-6 max-w-md w-full">
+            <div className="flex items-center space-x-3 mb-4">
+              <AlertCircle className="w-6 h-6 text-yellow-400" />
+              <h3 className="text-lg font-semibold text-white">Unsaved Changes</h3>
+            </div>
+            <p className="text-gray-300 mb-6">
+              You have unsaved changes. What would you like to do?
+            </p>
+            <div className="flex flex-col space-y-3">
+              <button
+                onClick={() => {
+                  handleSave('draft');
+                  setShowExitModal(false);
+                  window.history.back();
+                }}
+                className="flex items-center justify-center space-x-2 p-3 bg-gradient-to-r from-pink-500 to-violet-500 text-white font-medium rounded-xl hover:shadow-lg transition-all"
+              >
+                <Save className="w-4 h-4" />
+                <span>Save Draft & Exit</span>
+              </button>
+              <button
+                onClick={() => {
+                  setShowExitModal(false);
+                  window.history.back();
+                }}
+                className="flex items-center justify-center space-x-2 p-3 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-400 rounded-xl transition-all"
+              >
+                <X className="w-4 h-4" />
+                <span>Exit Without Saving</span>
+              </button>
+              <button
+                onClick={() => setShowExitModal(false)}
+                className="p-3 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-xl transition-all"
+              >
+                Continue Editing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Toast (you can replace with a proper toast library) */}
+      <div className="fixed bottom-4 right-4 z-50">
+        {(saving || publishing) && (
+          <div className="bg-black/90 backdrop-blur-xl rounded-xl border border-white/20 p-4 flex items-center space-x-3">
+            <div className="w-5 h-5 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
+            <span className="text-white">
+              {saving ? 'Saving draft...' : 'Publishing post...'}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default CreatePost;
