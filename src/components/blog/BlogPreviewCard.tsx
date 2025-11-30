@@ -29,6 +29,18 @@ const BlogPreviewCard: React.FC<BlogPreviewCardProps> = ({ post }) => {
       : content;
   };
 
+  // ✅ FIX: Get the correct image source
+  const getImageSource = () => {
+    // Priority: coverImageData (Base64) > coverImage (URL) > placeholder
+    if (post.coverImageData) {
+      return post.coverImageData;
+    }
+    if (post.coverImage) {
+      return post.coverImage;
+    }
+    return 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=400&fit=crop';
+  };
+
   const handleCardClick = (e: React.MouseEvent) => {
     // Prevent card click when clicking on interactive elements
     const target = e.target as HTMLElement;
@@ -51,9 +63,13 @@ const BlogPreviewCard: React.FC<BlogPreviewCardProps> = ({ post }) => {
       {/* Cover Image */}
       <div className="relative h-48 overflow-hidden">
         <img
-          src={post?.coverImage}
+          src={getImageSource()}
           alt={post.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          onError={(e) => {
+            // Fallback if image fails to load
+            e.currentTarget.src = 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=400&fit=crop';
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
         <div className="absolute bottom-4 left-4 flex items-center space-x-2">
@@ -75,7 +91,7 @@ const BlogPreviewCard: React.FC<BlogPreviewCardProps> = ({ post }) => {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
             <img
-              src={post.author?.avatar}
+              src={post.author?.avatar || 'https://via.placeholder.com/40'}
               alt={post.author?.username}
               className="w-10 h-10 rounded-full"
             />
@@ -117,7 +133,7 @@ const BlogPreviewCard: React.FC<BlogPreviewCardProps> = ({ post }) => {
 
         {/* Tags - Show only first 3 */}
         <div className="flex flex-wrap gap-2 mb-4">
-          {post.tags.slice(0, 3).map((tag, index) => (
+          {post.tags?.slice(0, 3).map((tag, index) => (
             <span
               key={index}
               className="px-2 py-1 bg-white/10 text-gray-400 text-xs rounded-full flex items-center space-x-1"
@@ -126,7 +142,7 @@ const BlogPreviewCard: React.FC<BlogPreviewCardProps> = ({ post }) => {
               <span>{tag}</span>
             </span>
           ))}
-          {post.tags.length > 3 && (
+          {post.tags && post.tags.length > 3 && (
             <span className="px-2 py-1 bg-white/10 text-gray-400 text-xs rounded-full">
               +{post.tags.length - 3} more
             </span>

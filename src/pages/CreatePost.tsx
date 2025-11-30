@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, Save, Eye, Send, Calendar, Globe, Lock, Users,
-  AlertCircle, X, FileText, Settings, Sparkles, Trash2,
+  AlertCircle, X, FileText, Settings, Sparkles, Trash2, Upload
 } from 'lucide-react';
-import { useAppDispatch } from '../redux/slices/hooks';
-import { createPost } from '../redux/slices/postsListSlice';
+import axios from 'axios';
 import RichTextEditor from '../components/createPost/RichTextEditor';
-import MediaUpload from '../components/createPost/MediaUpload';
 import PostPreview from '../components/createPost/PostPreview';
 
 interface PostData {
@@ -14,7 +12,6 @@ interface PostData {
   content: string;
   excerpt: string;
   category: string;
-  coverImage: string;
   tags: string[];
   status: 'DRAFT' | 'PUBLISHED' | 'SCHEDULED';
   visibility: 'PUBLIC' | 'PRIVATE' | 'FOLLOWERS';
@@ -47,13 +44,16 @@ const popularTags = [
 ];
 
 const CreatePost: React.FC = () => {
-  const dispatch = useAppDispatch();
   const [currentTab, setCurrentTab] = useState<'write' | 'preview' | 'settings'>('write');
   const [postData, setPostData] = useState<PostData>({
-    title: '', content: '', excerpt: '', coverImage: '', category: '',
+    title: '', content: '', excerpt: '', category: '',
     tags: [], status: 'DRAFT', visibility: 'PUBLIC',
     allowComments: true, featured: false
   });
+  
+  // File upload states
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
+  const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
   
   const [newTag, setNewTag] = useState('');
   const [showTagSuggestions, setShowTagSuggestions] = useState(false);
@@ -63,41 +63,119 @@ const CreatePost: React.FC = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   useEffect(() => {
-    const hasContent = postData.title.trim() || postData.content.trim();
+    const hasContent = postData.title.trim() || postData.content.trim() || coverImageFile !== null;
     setHasUnsavedChanges(hasContent);
-  }, [postData]);
+  }, [postData, coverImageFile]);
 
   const tagSuggestions = popularTags.filter(tag => 
     tag.toLowerCase().includes(newTag.toLowerCase()) && !postData.tags.includes(tag)
   );
+
+  // Handle file selection
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file (JPG, PNG, GIF, or WEBP)');
+        return;
+      }
+      
+      // Validate file size (10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        alert('File size must be less than 10MB');
+        return;
+      }
+      
+      setCoverImageFile(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCoverImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Remove selected file
+  const removeCoverImage = () => {
+    setCoverImageFile(null);
+    setCoverImagePreview(null);
+  };
 
   const handleSave = async (status: 'DRAFT' | 'PUBLISHED' = 'DRAFT') => {
     if (status === 'DRAFT') setSaving(true);
     else setPublishing(true);
 
     try {
+      // Validation for published posts
       if (status === 'PUBLISHED') {
-        if (!postData.title.trim()) { alert('Please enter a title'); return; }
-        if (!postData.content.trim()) { alert('Please enter content'); return; }
-        if (!postData.category) { alert('Please select a category'); return; }
+        if (!postData.title.trim()) { 
+          alert('Please enter a title'); 
+          return; 
+        }
+        if (!postData.content.trim()) { 
+          alert('Please enter content'); 
+          return; 
+        }
+        if (!postData.category) { 
+          alert('Please select a category'); 
+          return; 
+        }
       }
 
-      const dataToSend = {
-        title: postData.title,
-        content: postData.content,
-        excerpt: postData.excerpt || null,
-        category: postData.category,
-        tags: postData.tags.length > 0 ? postData.tags : [],
-        coverImage: postData.coverImage,
-        status: status,
-        visibility: postData.visibility,
-        publishDate: status === 'SCHEDULED' ? postData.publishDate : null,
-        allowComments: postData.allowComments,
-        featured: postData.featured
-      };
+      // Create FormData
+      const formData = new FormData();
+      
+      // Append all text fields (field names MUST match DTO property names)
+      formData.append('title', postData.title);
+      formData.append('content', postData.content);
+      formData.append('category', postData.category);
+      formData.append('status', status === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT');
+      formData.append('visibility', postData.visibility);
+      formData.append('allowComments', String(postData.allowComments));
+      formData.append('featured', String(postData.featured));
+      
+      // Append optional fields
+      if (postData.excerpt && postData.excerpt.trim()) {
+        formData.append('excerpt', postData.excerpt);
+      }
+      
+      // Append tags array - each tag separately
+      if (postData.tags && postData.tags.length > 0) {
+        postData.tags.forEach(tag => {
+          formData.append('tags', tag);
+        });
+      }
+      
+      // Append file if selected (field name must match DTO: 'coverImage')
+      if (coverImageFile) {
+        formData.append('coverImage', coverImageFile);
+      }
 
-      await dispatch(createPost(dataToSend)).unwrap();
-      console.log('Post saved successfully');
+      // Get auth token
+      const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+
+      console.log('Sending request...');
+      console.log('Title:', postData.title);
+      console.log('Category:', postData.category);
+      console.log('Status:', status);
+      console.log('Has file:', !!coverImageFile);
+
+      // Send request
+      const response = await axios.post(
+        'http://localhost:8080/post/v1/createPost',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Authorization': token ? `Bearer ${token}` : ''
+          }
+        }
+      );
+
+      console.log('Post saved successfully:', response.data);
       
       setHasUnsavedChanges(false);
       
@@ -106,9 +184,13 @@ const CreatePost: React.FC = () => {
       } else {
         alert('Draft saved! 💾');
       }
+
+      // Optionally redirect to posts list
+      // window.location.href = '/posts';
+      
     } catch (error: any) {
       console.error('Error saving post:', error);
-      const errorMessage = typeof error === 'string' ? error : (error.message || 'Failed to save post');
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to save post';
       alert(`Error: ${errorMessage}`);
     } finally {
       setSaving(false);
@@ -126,10 +208,6 @@ const CreatePost: React.FC = () => {
 
   const removeTag = (tagToRemove: string) => {
     setPostData(prev => ({ ...prev, tags: prev.tags.filter(tag => tag !== tagToRemove) }));
-  };
-
-  const handleMediaUpload = (files: FileList) => {
-    Array.from(files).forEach(file => console.log('Uploading file:', file.name));
   };
 
   const isFormValid = postData.title.trim() && postData.content.trim() && postData.category;
@@ -224,46 +302,7 @@ const CreatePost: React.FC = () => {
                 <RichTextEditor content={postData.content}
                   onChange={(content) => setPostData(prev => ({ ...prev, content }))} />
 
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-4">Media</h3>
-                  <MediaUpload onUpload={handleMediaUpload} />
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6">
-                  <h3 className="text-lg font-semibold text-white mb-4">Cover Image</h3>
-                  <div className="space-y-4">
-                    <input type="url" placeholder="Enter image URL..." value={postData.coverImage}
-                      onChange={(e) => setPostData(prev => ({ ...prev, coverImage: e.target.value }))}
-                      className="w-full p-3 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-pink-400" />
-                    {postData.coverImage && (
-                      <img src={postData.coverImage} alt="Cover preview" className="w-full h-32 object-cover rounded-xl"
-                        onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/400x200?text=Invalid+Image+URL'; }} />
-                    )}
-                  </div>
-                </div>
-
-                <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6">
-                  <h3 className="text-lg font-semibold text-white mb-4">Category *</h3>
-                  <div className="space-y-3">
-                    {categories.map((category) => (
-                      <label key={category.id}
-                        className={`flex items-center p-3 rounded-xl cursor-pointer transition-all ${
-                          postData.category === category.id ? 'bg-gradient-to-r from-pink-500/20 to-violet-500/20 border border-pink-500/30' : 'bg-white/5 hover:bg-white/10 border border-white/10'
-                        }`}>
-                        <input type="radio" name="category" value={category.id} checked={postData.category === category.id}
-                          onChange={(e) => setPostData(prev => ({ ...prev, category: e.target.value }))} className="sr-only" />
-                        <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${category.color} mr-3`} />
-                        <div>
-                          <div className="font-medium text-white">{category.name}</div>
-                          <div className="text-sm text-gray-400">{category.description}</div>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
+                {/* Tags Section - Moved from Sidebar */}
                 <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6">
                   <h3 className="text-lg font-semibold text-white mb-4">Tags</h3>
                   
@@ -311,6 +350,81 @@ const CreatePost: React.FC = () => {
                   </div>
                 </div>
               </div>
+
+              <div className="space-y-6">
+                {/* Cover Image Upload Section */}
+                <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4">Cover Image</h3>
+                  
+                  {!coverImagePreview ? (
+                    <div className="border-2 border-dashed border-white/20 rounded-xl p-8 text-center hover:border-pink-400 transition-colors cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                        id="cover-image-upload"
+                      />
+                      <label
+                        htmlFor="cover-image-upload"
+                        className="cursor-pointer flex flex-col items-center space-y-3"
+                      >
+                        <div className="p-4 bg-pink-500/20 rounded-full">
+                          <Upload className="w-8 h-8 text-pink-400" />
+                        </div>
+                        <div>
+                          <p className="text-white font-medium">Upload Cover Image</p>
+                          <p className="text-sm text-gray-400 mt-1">
+                            JPG, PNG, GIF or WEBP (Max 10MB)
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <img
+                          src={coverImagePreview}
+                          alt="Cover preview"
+                          className="w-full h-48 object-cover rounded-xl"
+                        />
+                        <button
+                          onClick={removeCoverImage}
+                          className="absolute top-2 right-2 p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors shadow-lg"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      {coverImageFile && (
+                        <div className="text-sm text-gray-400 space-y-1">
+                          <p className="truncate font-medium">{coverImageFile.name}</p>
+                          <p className="text-xs">{(coverImageFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4">Category *</h3>
+                  <div className="space-y-3">
+                    {categories.map((category) => (
+                      <label key={category.id}
+                        className={`flex items-center p-3 rounded-xl cursor-pointer transition-all ${
+                          postData.category === category.id ? 'bg-gradient-to-r from-pink-500/20 to-violet-500/20 border border-pink-500/30' : 'bg-white/5 hover:bg-white/10 border border-white/10'
+                        }`}>
+                        <input type="radio" name="category" value={category.id} checked={postData.category === category.id}
+                          onChange={(e) => setPostData(prev => ({ ...prev, category: e.target.value }))} className="sr-only" />
+                        <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${category.color} mr-3`} />
+                        <div>
+                          <div className="font-medium text-white">{category.name}</div>
+                          <div className="text-sm text-gray-400">{category.description}</div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -320,7 +434,7 @@ const CreatePost: React.FC = () => {
                 <h2 className="text-2xl font-bold text-white mb-2">Post Preview</h2>
                 <p className="text-gray-400">This is how your post will appear to readers</p>
               </div>
-              <PostPreview postData={{...postData, coverImage: postData.coverImage}} />
+              <PostPreview postData={{...postData, coverImage: coverImagePreview || ''}} />
             </div>
           )}
 
@@ -356,15 +470,6 @@ const CreatePost: React.FC = () => {
                       ))}
                     </div>
                   </div>
-
-                  {postData.status === 'SCHEDULED' && (
-                    <div>
-                      <label className="block text-white font-medium mb-3">Publish Date</label>
-                      <input type="datetime-local" value={postData.publishDate || ''}
-                        onChange={(e) => setPostData(prev => ({ ...prev, publishDate: e.target.value }))}
-                        className="w-full p-3 bg-white/5 border border-white/20 rounded-xl text-white focus:outline-none focus:border-pink-400" />
-                    </div>
-                  )}
 
                   <div>
                     <label className="block text-white font-medium mb-3">Visibility</label>
@@ -419,37 +524,6 @@ const CreatePost: React.FC = () => {
                       <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-500"></div>
                     </label>
                   </label>
-                </div>
-              </div>
-
-              <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6">
-                <h3 className="text-xl font-semibold text-white mb-6">SEO & Metadata</h3>
-                
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-white font-medium mb-2">Meta Description</label>
-                    <textarea placeholder="Brief description for search engines (160 characters max)" rows={3} maxLength={160}
-                      className="w-full p-3 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-pink-400 resize-none" />
-                    <div className="text-xs text-gray-400 mt-1">0/160 characters</div>
-                  </div>
-
-                  <div>
-                    <label className="block text-white font-medium mb-2">Canonical URL</label>
-                    <input type="url" placeholder="https://example.com/original-post"
-                      className="w-full p-3 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-pink-400" />
-                    <div className="text-xs text-gray-400 mt-1">Set if this content was published elsewhere first</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6">
-                <h3 className="text-xl font-semibold text-red-400 mb-6">Danger Zone</h3>
-                
-                <div className="space-y-4">
-                  <button className="w-full flex items-center justify-center space-x-2 p-3 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-400 rounded-xl transition-all">
-                    <Trash2 className="w-5 h-5" />
-                    <span>Delete Draft</span>
-                  </button>
                 </div>
               </div>
             </div>

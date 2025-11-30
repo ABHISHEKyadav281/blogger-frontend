@@ -5,9 +5,6 @@ import { useAppDispatch, useAppSelector } from '../redux/slices/hooks';
 import {
   fetchPosts,
   resetPosts,
-  toggleLike,
-  toggleBookmark,
-  toggleSubscribe,
 } from '../redux/slices/postsListSlice';
 import { setModal } from '../redux/slices/uiSlice';
 import BlogPreviewCard from '../components/blog/BlogPreviewCard';
@@ -89,7 +86,7 @@ const HomePage: React.FC = () => {
   const hasMore = postsState?.hasMore || false;
   const currentPage = postsState?.currentPage || 1;
   
-  const { user, isAuthenticated } = useAppSelector((state) => state.auth);
+  const { isAuthenticated, user } = useAppSelector((state) => state.auth);
   const { modals } = useAppSelector((state) => state?.ui);
   
   const observer = useRef<IntersectionObserver | null>(null);

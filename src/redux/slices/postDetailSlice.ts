@@ -28,7 +28,8 @@ export const fetchPostById = createAsyncThunk(
     async (postId: string, { rejectWithValue }) => {
         try {
             const response = await api.get(`/post/v1/posts/${postId}`);
-            return response.data;
+            // api.ts interceptor already returns response.data (the actual data), but TS thinks it's AxiosResponse
+            return response as unknown as BlogPost;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message || 'Failed to fetch post');
         }
@@ -64,32 +65,32 @@ const postDetailSlice = createSlice({
 
         // Listen to actions from postsListSlice
         builder.addCase(toggleLike, (state, action) => {
-            if (state.currentPost?.id === action.payload) {
+            if (state.currentPost && state.currentPost.id === action.payload) {
                 state.currentPost.stats.isLiked = !state.currentPost.stats.isLiked;
                 state.currentPost.stats.likes += state.currentPost.stats.isLiked ? 1 : -1;
             }
         });
 
         builder.addCase(toggleBookmark, (state, action) => {
-            if (state.currentPost?.id === action.payload) {
+            if (state.currentPost && state.currentPost.id === action.payload) {
                 state.currentPost.stats.isBookmarked = !state.currentPost.stats.isBookmarked;
             }
         });
 
         builder.addCase(toggleSubscribe, (state, action) => {
-            if (state.currentPost?.author.name === action.payload) {
+            if (state.currentPost && state.currentPost.author.name === action.payload) {
                 state.currentPost.author.isSubscribed = !state.currentPost.author.isSubscribed;
             }
         });
 
         builder.addCase(incrementViews, (state, action) => {
-            if (state.currentPost?.id === action.payload) {
+            if (state.currentPost && state.currentPost.id === action.payload) {
                 state.currentPost.stats.views += 1;
             }
         });
 
         builder.addCase(updatePost, (state, action) => {
-            if (state.currentPost?.id === action.payload.postId) {
+            if (state.currentPost && state.currentPost.id === action.payload.postId) {
                 Object.assign(state.currentPost, action.payload.updates);
             }
         });
@@ -101,7 +102,7 @@ const postDetailSlice = createSlice({
         });
 
         builder.addCase(likePost.fulfilled, (state, action) => {
-            if (state.currentPost?.id === action.payload.postId) {
+            if (state.currentPost && state.currentPost.id === action.payload.postId) {
                 state.currentPost.stats.isLiked = action.payload.isLiked;
                 state.currentPost.stats.likes = action.payload.likesCount;
             }
