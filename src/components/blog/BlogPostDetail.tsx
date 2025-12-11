@@ -41,6 +41,38 @@ const BlogPostDetail: React.FC = () => {
     return 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&h=600&fit=crop';
   };
 
+  // Helper to format content with basic markdown support (matching PostPreview)
+  const formatContent = (content: string) => {
+    return content
+      .split('\n')
+      .map((line, index) => {
+        if (line.startsWith('## ')) {
+          return <h2 key={index} className="text-2xl font-bold text-white mb-4 mt-6">{line.replace('## ', '')}</h2>;
+        }
+        if (line.startsWith('### ')) {
+          return <h3 key={index} className="text-xl font-semibold text-white mb-3 mt-4">{line.replace('### ', '')}</h3>;
+        }
+        if (line.startsWith('> ')) {
+          return <blockquote key={index} className="border-l-4 border-pink-500 pl-4 text-gray-300 italic mb-4">{line.replace('> ', '')}</blockquote>;
+        }
+        if (line.startsWith('- ')) {
+          return <li key={index} className="text-gray-300 mb-2 ml-4 list-disc">{line.replace('- ', '')}</li>;
+        }
+        if (line.trim() === '') {
+          return <br key={index} />;
+        }
+        
+        // Handle inline formatting
+        let formatted = line
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+          .replace(/`(.*?)`/g, '<code class="bg-white/10 px-1 rounded">$1</code>')
+          .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" class="text-pink-400 hover:underline" target="_blank" rel="noopener noreferrer">$1</a>');
+        
+        return <p key={index} className="text-gray-300 mb-4 leading-relaxed" dangerouslySetInnerHTML={{ __html: formatted }} />;
+      });
+  };
+
   // Action handlers
   const handleLike = () => {
     if (post) dispatch(toggleLike(post.id));
@@ -146,9 +178,7 @@ const BlogPostDetail: React.FC = () => {
 
         {/* Content */}
         <div className="prose prose-invert max-w-none my-6 text-gray-300">
-          {(post.content || 'No content available.').split('\n\n').map((para, idx) => (
-            <p key={idx}>{para}</p>
-          ))}
+          {post.content ? formatContent(post.content) : <p>No content available.</p>}
         </div>
 
         {/* Tags */}
