@@ -131,24 +131,6 @@ const BlogPreviewCard: React.FC<BlogPreviewCardProps> = ({ post }) => {
           {truncateContent(post.content)}
         </p>
 
-        {/* Tags - Show only first 3 */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          {post.tags?.slice(0, 3).map((tag, index) => (
-            <span
-              key={index}
-              className="px-2 py-1 bg-white/10 text-gray-400 text-xs rounded-full flex items-center space-x-1"
-            >
-              <Tag className="w-3 h-3" />
-              <span>{tag}</span>
-            </span>
-          ))}
-          {post.tags && post.tags.length > 3 && (
-            <span className="px-2 py-1 bg-white/10 text-gray-400 text-xs rounded-full">
-              +{post.tags.length - 3} more
-            </span>
-          )}
-        </div>
-
         {/* Action Buttons */}
         <div className="flex items-center justify-between pt-4 border-t border-white/10">
           <div className="flex items-center space-x-4">
@@ -222,3 +204,135 @@ const BlogPreviewCard: React.FC<BlogPreviewCardProps> = ({ post }) => {
 };
 
 export default BlogPreviewCard;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// import React from 'react';
+// import { useNavigate } from 'react-router-dom';
+// import { Heart, MessageCircle, Eye } from 'lucide-react';
+// import type { BlogPost } from '../../types';
+
+// interface BlogPreviewCardProps {
+//   post: BlogPost;
+// }
+
+// const BlogPreviewCard: React.FC<BlogPreviewCardProps> = ({ post }) => {
+//   const navigate = useNavigate();
+
+//   const cover =
+//     post.coverImage ||
+//     'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&fit=crop';
+
+//   return (
+//     <article className="rounded-3xl overflow-hidden bg-gradient-to-br from-[#1E2A6A] via-[#1B255E] to-[#141B47] border border-white/10 shadow-xl">
+      
+//       {/* Cover Image */}
+//       <div className="relative h-56">
+//         <img
+//           src={cover}
+//           alt={post.title}
+//           className="w-full h-full object-cover"
+//         />
+
+//         {/* Gradient Overlay */}
+//         <div className="absolute inset-0 bg-gradient-to-t from-[#141B47]/90 via-[#141B47]/40 to-transparent" />
+
+//         {/* Category */}
+//         <span className="absolute bottom-4 left-4 px-4 py-1 text-sm rounded-full bg-pink-500 text-white font-medium">
+//           {post.category}
+//         </span>
+//       </div>
+
+//       {/* Content */}
+//       <div className="p-8">
+//         {/* Title */}
+//         <h2 className="text-3xl font-bold text-white mb-4 leading-tight">
+//           {post.title}
+//         </h2>
+
+//         {/* Author */}
+//         <div className="flex items-center gap-3 mb-4">
+//           <img
+//             src={post.author?.avatar || 'https://via.placeholder.com/40'}
+//             alt={post.author?.username}
+//             className="w-9 h-9 rounded-full"
+//           />
+//           <span className="text-white font-medium">
+//             {post.author?.username}
+//           </span>
+//         </div>
+
+//         {/* Excerpt */}
+//         <p className="text-gray-300 max-w-3xl mb-8">
+//           {post.excerpt || post.content.slice(0, 160) + '...'}
+//         </p>
+
+//         {/* Bottom Row */}
+//         <div className="flex items-center justify-between">
+//           {/* Stats */}
+//           <div className="flex items-center gap-6 text-gray-300">
+//             <div className="flex items-center gap-2">
+//               <Heart className="w-5 h-5" />
+//               <span>{post.stats?.likes}</span>
+//             </div>
+
+//             <div className="flex items-center gap-2">
+//               <MessageCircle className="w-5 h-5" />
+//               <span>{post.stats?.comments}</span>
+//             </div>
+
+//             <div className="flex items-center gap-2">
+//               <Eye className="w-5 h-5" />
+//               <span>{post.stats?.views}</span>
+//             </div>
+//           </div>
+
+//           {/* CTA */}
+//           <button
+//             onClick={() => navigate(`/post/${post.id}`)}
+//             className="px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-white font-medium transition"
+//           >
+//             Read Full Article →
+//           </button>
+//         </div>
+//       </div>
+//     </article>
+//   );
+// };
+
+// export default BlogPreviewCard;

@@ -19,6 +19,7 @@ import {
   ArrowRight,
   Tag,
   TrendingUp,
+  Users
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../redux/slices/hooks';
@@ -230,6 +231,22 @@ const MobileMenu: React.FC<{
             </button>
 
             <button
+              onClick={() => handleNavigate('/follows')}
+              className="w-full flex items-center space-x-3 p-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+            >
+              <Users className="w-5 h-5" />
+              <span className="font-medium">My Follows</span>
+            </button>
+
+            <button
+              onClick={() => handleNavigate('/my-blogs')}
+              className="w-full flex items-center space-x-3 p-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+            >
+              <PenTool className="w-5 h-5" />
+              <span className="font-medium">My Blogs</span>
+            </button>
+
+            <button
               onClick={() => handleNavigate('/profile')}
               className="w-full flex items-center space-x-3 p-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-all"
             >
@@ -351,12 +368,7 @@ const Header: React.FC = () => {
                 </span>
               </div>
 
-              <nav className="flex items-center space-x-6">
-                <button onClick={() => navigate('/')} className="flex items-center space-x-2 px-3 py-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-all">
-                  <Home className="w-4 h-4" />
-                  <span className="font-medium">Home</span>
-                </button>
-              </nav>
+
             </div>
 
             <div className="flex-1 max-w-2xl mx-8">
@@ -418,6 +430,14 @@ const Header: React.FC = () => {
                         <button onClick={() => handleNavigate('/bookmarks')} className="w-full flex items-center space-x-3 p-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-all">
                           <Bookmark className="w-5 h-5" />
                           <span>Bookmarks</span>
+                        </button>
+                        <button onClick={() => handleNavigate('/follows')} className="w-full flex items-center space-x-3 p-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-all">
+                          <Users className="w-5 h-5" />
+                          <span>My Follows</span>
+                        </button>
+                        <button onClick={() => handleNavigate('/my-blogs')} className="w-full flex items-center space-x-3 p-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-all">
+                          <PenTool className="w-5 h-5" />
+                          <span>My Blogs</span>
                         </button>
                         <button onClick={() => handleNavigate('/settings')} className="w-full flex items-center space-x-3 p-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-all">
                           <Settings className="w-5 h-5" />

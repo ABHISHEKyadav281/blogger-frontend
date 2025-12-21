@@ -9,10 +9,20 @@ import SearchResultsPage from "../pages/SearchResultsPage";
 import AuthPage from "../pages/AuthPage";
 import { ProtectedRoute, PublicRoute } from "./ProtectedRotes";
 import CreatePostPage from "../pages/CreatePost";
+import MyBookmarksPage from "../pages/MyBookmarksPage";
+import MyFollowsPage from "../pages/MyFollowsPage";
+import MyBlogsPage from "../pages/MyBlogsPage";
 import { useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
 import { loginSuccess } from "../redux/slices/authSlice";
 import { useAppDispatch } from "../redux/slices/hooks";
+
+interface TokenPayload {
+  userId: string;
+  sub: string;
+  email: string;
+  exp: number;
+}
 
 export const AppRoutes = () => {
   const dispatch = useAppDispatch();
@@ -97,6 +107,33 @@ export const AppRoutes = () => {
           element={
             <ProtectedRoute>
               <UserProfilePage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/bookmarks"
+          element={
+            <ProtectedRoute>
+              <MyBookmarksPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/follows"
+          element={
+            <ProtectedRoute>
+              <MyFollowsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/my-blogs"
+          element={
+            <ProtectedRoute>
+              <MyBlogsPage />
             </ProtectedRoute>
           }
         />
