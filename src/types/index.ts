@@ -16,6 +16,8 @@ export interface User {
 }
 
 export interface BlogPost {
+  commentsCount: number;
+  likesCount: number;
   id: string;
   title: string;
   content: string;
@@ -30,9 +32,11 @@ export interface BlogPost {
     likes: number;
     comments: number;
     views: number;
-    isLiked: boolean;
-    isBookmarked: boolean;
   };
+  isBookmarked: boolean;
+  isLiked: boolean;
+  isDisliked: boolean;
+  dislikesCount: number;
 }
 
 export interface Comment {

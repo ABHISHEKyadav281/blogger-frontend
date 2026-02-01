@@ -26,11 +26,29 @@ const BlogPreviewCard: React.FC<BlogPreviewCardProps> = ({ post }) => {
   };
 
   // Get the correct image source
-  const getImageSource = () => {
-    if (post.coverImage) {
-      return post.coverImage;
+   const getImageSource = () => {
+    if (!post)
+      return "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&h=600&fit=crop";
+    
+    // Check for coverImageData (Base64)
+    const postAny = post as any;
+    if (postAny.coverImageData) {
+        if (postAny.coverImageData.startsWith('data:image')) {
+            return postAny.coverImageData;
+        }
+        // Assume JPEG if no prefix
+        return `data:image/jpeg;base64,${postAny.coverImageData}`;
     }
-    return 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=400&fit=crop';
+
+    // Check for coverImage (URL)
+    if (post.coverImage) {
+        if (post.coverImage.startsWith('http')) return post.coverImage;
+        // If relative path, prepend backend URL? Or maybe it's base64 without prefix?
+        // Let's assume it might be relative path served by backend static files
+        return `http://localhost:8080${post.coverImage.startsWith('/') ? '' : '/'}${post.coverImage}`;
+    }
+    
+    return "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&h=600&fit=crop";
   };
 
   const handleCardClick = (e: React.MouseEvent) => {

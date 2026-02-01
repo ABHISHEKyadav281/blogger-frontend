@@ -36,6 +36,22 @@ export const fetchPostById = createAsyncThunk(
     }
 );
 
+export const fetchPostLikeCount = createAsyncThunk(
+    'postDetail/fetchPostLikeCount',
+    async (postId: string, { rejectWithValue }) => {
+        try {
+            const response = await api.get(`/reaction/post/like/count?postId=${postId}`) as any;
+            // The response might be a number directly, or an object like { count: number }
+            // Return the count as a number
+            const count = typeof response === 'number' ? response : (response?.data ?? response);
+            console.log('Fetched like count:', count, 'from response:', response);
+            return { postId, count: Number(count) };
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.message || 'Failed to fetch like count');
+        }
+    }
+);
+
 const postDetailSlice = createSlice({
     name: 'postDetail',
     initialState,
@@ -56,24 +72,40 @@ const postDetailSlice = createSlice({
             .addCase(fetchPostById.fulfilled, (state, action) => {
                 state.isLoading = false;
                 state.currentPost = action.payload;
+                console.log('Post loaded with likesCount:', action.payload.likesCount);
+                console.log('Post stats.likes:', action.payload.stats?.likes);
                 state.error = null;
             })
             .addCase(fetchPostById.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.payload as string || 'Failed to fetch post';
+            })
+            .addCase(fetchPostLikeCount.fulfilled, (state, action) => {
+                console.log('fetchPostLikeCount.fulfilled called');
+                console.log('Current post:', state.currentPost);
+                console.log('Payload:', action.payload);
+                console.log('Post IDs match?', state.currentPost?.id === action.payload.postId);
+
+                if (state.currentPost) {
+                    console.log('Before update - likesCount:', state.currentPost.likesCount);
+                    state.currentPost.likesCount = action.payload.count;
+                    console.log('After update - likesCount:', state.currentPost.likesCount);
+                } else {
+                    console.warn('Post ID mismatch or no current post!');
+                }
             });
 
         // Listen to actions from postsListSlice
         builder.addCase(toggleLike, (state, action) => {
             if (state.currentPost && state.currentPost.id === action.payload) {
-                state.currentPost.stats.isLiked = !state.currentPost.stats.isLiked;
-                state.currentPost.stats.likes += state.currentPost.stats.isLiked ? 1 : -1;
+                state.currentPost.isLiked = !state.currentPost.isLiked;
+                state.currentPost.likesCount += state.currentPost.isLiked ? 1 : -1;
             }
         });
 
         builder.addCase(toggleBookmark, (state, action) => {
             if (state.currentPost && state.currentPost.id === action.payload) {
-                state.currentPost.stats.isBookmarked = !state.currentPost.stats.isBookmarked;
+                state.currentPost.isBookmarked = !state.currentPost.isBookmarked;
             }
         });
 
@@ -103,8 +135,8 @@ const postDetailSlice = createSlice({
 
         builder.addCase(likePost.fulfilled, (state, action) => {
             if (state.currentPost && state.currentPost.id === action.payload.postId) {
-                state.currentPost.stats.isLiked = action.payload.isLiked;
-                state.currentPost.stats.likes = action.payload.likesCount;
+                state.currentPost.isLiked = action.payload.liked;
+                state.currentPost.likesCount = action.payload.likesCount;
             }
         });
     },
