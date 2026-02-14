@@ -85,7 +85,7 @@ export const fetchFeaturedPosts = createAsyncThunk(
             const response = await api.get('/post/v1/featured', {
                 params: { page, limit }
             });
-            return response.data;
+            return response as any;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message || 'Failed to fetch featured posts');
         }
@@ -107,7 +107,7 @@ export const fetchUserPosts = createAsyncThunk(
             const response = await api.get(`/post/v1/user/${userId}`, {
                 params: { page, limit }
             });
-            return response.data;
+            return response as any;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message || 'Failed to fetch user posts');
         }
@@ -119,7 +119,7 @@ export const createPost = createAsyncThunk(
     async (postData: any, { rejectWithValue }) => {
         try {
             const response = await api.post('/post/v1/createPost', postData);
-            return response.data;
+            return response as any;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message || 'Failed to create post');
         }
@@ -198,10 +198,10 @@ export const fetchBookmarkedPosts = createAsyncThunk(
     'postsList/fetchBookmarkedPosts',
     async ({ page = 1, limit = 10 }: { page?: number; limit?: number } = {}, { rejectWithValue }) => {
         try {
-            const response = await api.get('/post/v1/bookmarks', {
+            const response = await api.get('/user/action/bookmarked/posts', {
                 params: { page, limit }
             });
-            return response.data;
+            return response as any;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message || 'Failed to fetch bookmarked posts');
         }
@@ -468,20 +468,25 @@ const postsListSlice = createSlice({
             })
             .addCase(fetchBookmarkedPosts.fulfilled, (state, action) => {
                 state.isLoading = false;
-                state.bookmarkedPosts = action.payload.posts || [];
-                // If we want to show them in the main list, we can also set state.posts
-                // For a specific "My Bookmarks" page, we might want to use state.posts or state.bookmarkedPosts
-                // Let's assume the page will read from state.posts if we use a separate page logic,
-                // or we can just populate state.posts to reuse the list component.
-                // However, the interface has a specific `bookmarkedPosts` field.
-                // Let's populate state.posts so we can reuse generic list selectors/components if they rely on it,
-                // BUT wait, `bookmarkedPosts` exists in state.
-                // Let's settle on using state.posts for the current view to allow pagination etc using the same variables.
-                state.posts = action.payload.posts || [];
-                state.totalPosts = action.payload.totalPosts || 0;
-                state.currentPage = action.payload.currentPage || 1;
-                state.totalPages = action.payload.totalPages || 1;
-                state.hasMore = action.payload.hasMore || false;
+                // Handle various potential API response formats: 
+                // 1. { posts: [...] }
+                // 2. { data: [...] }
+                // 3. { content: [...] } (Spring/JPA)
+                // 4. [...] (Direct array)
+                const payload = action.payload;
+                const posts = payload?.posts || payload?.data || payload?.content || (Array.isArray(payload) ? payload : []);
+
+                const totalPosts = payload?.totalPosts || payload?.totalElements || posts.length;
+                const currentPage = payload?.currentPage || payload?.number + 1 || 1;
+                const totalPages = payload?.totalPages || 1;
+                const hasMore = payload?.hasMore || (currentPage < totalPages) || false;
+
+                state.bookmarkedPosts = posts;
+                state.posts = posts;
+                state.totalPosts = totalPosts;
+                state.currentPage = currentPage;
+                state.totalPages = totalPages;
+                state.hasMore = hasMore;
             })
             .addCase(fetchBookmarkedPosts.rejected, (state, action) => {
                 state.isLoading = false;

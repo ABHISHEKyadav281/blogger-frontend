@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../redux/slices/hooks';
 import { fetchUserDetails, fetchUserPosts } from '../redux/slices/userProfileSlice';
+import api from '../utils/api';
 import { 
   ArrowLeft, 
   Edit3, 
@@ -690,6 +691,7 @@ const EditProfileModal: React.FC<{
 const UserProfilePage: React.FC = () => {
   const [user, setUser] = useState(sampleUser);
   const [posts, setPosts] = useState(samplePosts);
+  const [isSubscribed, setIsSubscribed] = useState(false);
   const [activity] = useState(sampleActivity);
   const [activeTab, setActiveTab] = useState<'posts' | 'activity' | 'about'>('posts');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -719,6 +721,13 @@ const UserProfilePage: React.FC = () => {
     if (userId) {
       dispatch(fetchUserDetails(userId));
       dispatch(fetchUserPosts({ userId }));
+      
+      // Fetch subscription status
+      if (!isOwnProfile) {
+        api.get(`/user/action/is-subscribed?bloggerId=${userId}`)
+          .then(resp => setIsSubscribed(resp.data))
+          .catch(err => console.error("Failed to fetch subscription status:", err));
+      }
     }
   }, [dispatch, userId]);
 
@@ -819,8 +828,20 @@ const UserProfilePage: React.FC = () => {
     }
   });
 
-  const handleFollow = () => {
-    setUser(prev => ({ ...prev, isFollowing: !prev.isFollowing }));
+  const handleSubscribe = async () => {
+    if (userId && !isOwnProfile) {
+      try {
+        if (!isSubscribed) {
+          await api.post(`/user/action/subscribe?bloggerId=${userId}`);
+          setIsSubscribed(true);
+        } else {
+          await api.post(`/user/action/unsubscribe?bloggerId=${userId}`);
+          setIsSubscribed(false);
+        }
+      } catch (error) {
+        console.error("Subscription action failed:", error);
+      }
+    }
   };
 
   const handleLikePost = (postId: string) => {
@@ -1014,27 +1035,24 @@ const UserProfilePage: React.FC = () => {
                       {!isOwnProfile && (
                         <>
                           <button
-                            onClick={handleFollow}
+                            onClick={handleSubscribe}
                             className={`px-6 py-3 rounded-xl font-medium transition-all ${
-                              user.isFollowing
+                              isSubscribed
                                 ? 'bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30'
                                 : 'bg-gradient-to-r from-pink-500 to-violet-500 text-white hover:shadow-lg'
                             }`}
                           >
-                            {user.isFollowing ? (
+                            {isSubscribed ? (
                               <span className="flex items-center space-x-2">
                                 <UserCheck className="w-4 h-4" />
-                                <span>Following</span>
+                                <span>Subscribed</span>
                               </span>
                             ) : (
                               <span className="flex items-center space-x-2">
                                 <UserPlus className="w-4 h-4" />
-                                <span>Follow</span>
+                                <span>Subscribe</span>
                               </span>
                             )}
-                          </button>
-                          <button className="px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-xl transition-all">
-                            Message
                           </button>
                         </>
                       )}

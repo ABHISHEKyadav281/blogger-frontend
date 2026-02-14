@@ -312,10 +312,20 @@ const BlogPostDetail: React.FC = () => {
                 "https://via.placeholder.com/150"
               }
               alt={post.author?.name || post.user?.name || "Author"}
-              className="w-14 h-14 rounded-full border-2 border-white/20"
+              className="w-14 h-14 rounded-full border-2 border-white/20 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+              onClick={() => {
+                const id = post.author?.id || post.user?.id;
+                if (id) navigate(`/profile/${id}`);
+              }}
             />
             <div>
-              <h3 className="font-semibold text-white text-lg">
+              <h3 
+                className="font-semibold text-white text-lg cursor-pointer hover:text-primary transition-colors"
+                onClick={() => {
+                  const id = post.author?.id || post.user?.id;
+                  if (id) navigate(`/profile/${id}`);
+                }}
+              >
                 {post.author?.username ||
                   post.user?.username ||
                   "Unknown Author"}

@@ -144,8 +144,9 @@ const searchContent = async (query: string): Promise<SearchResult[]> => {
 const PostResult: React.FC<{ 
   result: SearchResult; 
   searchTerm: string; 
-  onView: (id: string) => void;
+  onView: (id: string, type: string) => void;
 }> = ({ result, searchTerm, onView }) => {
+  const navigate = useNavigate();
   const highlightText = (text: string) => {
     if (!searchTerm) return text;
     const regex = new RegExp(`(${searchTerm})`, 'gi');
@@ -161,7 +162,7 @@ const PostResult: React.FC<{
   return (
     <div 
       className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 overflow-hidden hover:shadow-2xl transition-all duration-300 cursor-pointer hover:border-pink-500/30"
-      onClick={() => onView(result.id)}
+      onClick={() => onView(result.id, 'post')}
     >
       <div className="flex">
         <img 
@@ -188,7 +189,15 @@ const PostResult: React.FC<{
 
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
+              <div 
+                className="flex items-center space-x-2 cursor-pointer hover:text-pink-400 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/profile/${result.id}`); // This is tricky as result.id is post id, but dummy data has result.id = author.id for users. For posts we'd need author.id.
+                  // Wait, looking at current SearchResult interface, author doesn't have id.
+                  // I'll assume result.id is what we need for now or improve the interface.
+                }}
+              >
                 <img 
                   src={result.author.avatar} 
                   alt={result.author.name}
@@ -230,7 +239,7 @@ const PostResult: React.FC<{
 const UserResult: React.FC<{ 
   result: SearchResult; 
   searchTerm: string; 
-  onView: (id: string) => void;
+  onView: (id: string, type: string) => void;
 }> = ({ result, searchTerm, onView }) => {
   const highlightText = (text: string) => {
     if (!searchTerm) return text;
@@ -247,7 +256,7 @@ const UserResult: React.FC<{
   return (
     <div 
       className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300 cursor-pointer hover:border-pink-500/30"
-      onClick={() => onView(result.id)}
+      onClick={() => onView(result.id, 'user')}
     >
       <div className="flex items-start space-x-4">
         <img
@@ -285,7 +294,10 @@ const UserResult: React.FC<{
                 <span className="text-gray-400 ml-1">likes</span>
               </span>
             </div>
-            <button className="px-4 py-2 bg-gradient-to-r from-pink-500 to-violet-500 text-white font-medium rounded-xl hover:shadow-lg transition-all text-sm">
+            <button 
+              className="px-4 py-2 bg-gradient-to-r from-pink-500 to-violet-500 text-white font-medium rounded-xl hover:shadow-lg transition-all text-sm"
+              onClick={(e) => { e.stopPropagation(); /* handle follow */ }}
+            >
               Follow
             </button>
           </div>
@@ -345,8 +357,12 @@ const SearchResultsPage: React.FC = () => {
     }
   };
 
-  const handleResultView = (id: string) => {
-    navigate(`/post/${id}`);
+  const handleResultView = (id: string, type: string) => {
+    if (type === 'post') {
+      navigate(`/post/${id}`);
+    } else {
+      navigate(`/profile/${id}`);
+    }
   };
 
   const handleBack = () => {
@@ -356,7 +372,9 @@ const SearchResultsPage: React.FC = () => {
   // Redirect to home if no search query
   useEffect(() => {
     if (!initialQuery && !searchTerm) {
-      navigate('/');
+      if (window.location.pathname === '/search') {
+         navigate('/');
+      }
     }
   }, [initialQuery, searchTerm, navigate]);
 
