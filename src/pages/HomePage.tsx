@@ -1,23 +1,26 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Star, List, Grid3X3, Filter, TrendingUp } from 'lucide-react';
+import { Star, List, Grid3X3, Filter, TrendingUp, Sparkles } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../redux/slices/hooks';
 import {
   fetchPosts,
   resetPosts,
+  setFilters,
 } from '../redux/slices/postsListSlice';
 import { setModal } from '../redux/slices/uiSlice';
 import BlogPreviewCard from '../components/blog/BlogPreviewCard';
 
-const Sidebar: React.FC = () => {
+interface SidebarProps {
+  selectedCategory: string | null;
+  onCategorySelect: (category: string | null) => void;
+}
 
+const Sidebar: React.FC<SidebarProps> = ({ selectedCategory, onCategorySelect }) => {
   const categories = [
-    { name: 'All Posts', count: 1247, active: true },
-    { name: 'Anime Reviews', count: 324 },
-    { name: 'Manga Discussion', count: 189 },
-    { name: 'News & Updates', count: 156 },
-    { name: 'Character Analysis', count: 98 },
-    { name: 'Studio Spotlights', count: 67 },
+    { name: 'All Posts', slug: null },
+    { name: 'Anime Reviews', slug: 'Anime Reviews' },
+    { name: 'Manga Discussion', slug: 'Manga Discussion' },
+    { name: 'Character Analysis', slug: 'Character Analysis' },
   ];
 
   const trendingTags = [
@@ -38,14 +41,15 @@ const Sidebar: React.FC = () => {
             {categories.map((category, index) => (
               <button
                 key={index}
+                onClick={() => onCategorySelect(category.slug)}
                 className={`w-full flex items-center justify-between p-3 rounded-xl transition-all duration-300 ${
-                  category.active 
+                  selectedCategory === category.slug
                     ? 'bg-primary/20 border border-primary/30 text-white' 
                     : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
               >
                 <span>{category.name}</span>
-                <span className="text-sm bg-white/10 px-2 py-1 rounded-full">{category.count}</span>
+                {selectedCategory === category.slug && <Sparkles className="w-4 h-4 text-pink-500" />}
               </button>
             ))}
           </div>
@@ -77,63 +81,53 @@ const HomePage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   
-  // ✅ Redux state with proper null safety - FIXED: use postsList instead of posts
-  const postsState = useAppSelector((state) => state?.postsList);
-  const posts = postsState?.posts || [];
-  const isLoading = postsState?.isLoading || false;
-  const error = postsState?.error || null;
-  const hasMore = postsState?.hasMore || false;
-  const currentPage = postsState?.currentPage || 1;
+  // ✅ Redux state
+  const postsState = useAppSelector((state) => state.postsList);
+  const { posts, isLoading, error, hasMore, currentPage, filters } = postsState;
   
   const { isAuthenticated, user } = useAppSelector((state) => state.auth);
-  const { modals } = useAppSelector((state) => state?.ui);
+  const { modals } = useAppSelector((state) => state.ui);
   
   const observer = useRef<IntersectionObserver | null>(null);
-  
-  // Local state
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
-  // ✅ Fetch initial posts
-  useEffect(() => {
-    console.log('🚀 Fetching initial posts...');
-    dispatch(resetPosts());
-    dispatch(fetchPosts({ page: 1, limit: 10 }));
-  }, [dispatch]);
+  // ✅ Fetch posts based on filters
+  const fetchWrappedPosts = useCallback((page: number) => {
+    dispatch(fetchPosts({ 
+      page, 
+      limit: 10,
+      search: filters.search,
+      category: filters.category
+    }));
+  }, [dispatch, filters]);
 
-  // ✅ Debug state
+  // Handle Initial Load and Filter Changes
   useEffect(() => {
-    console.log('🔍 Redux State:', {
-      postsCount: posts.length,
-      isLoading,
-      error,
-      hasMore,
-      currentPage
-    });
-  }, [posts, isLoading, error, hasMore, currentPage]);
+    console.log('🚀 Fetching posts with filters:', filters);
+    dispatch(resetPosts());
+    fetchWrappedPosts(1);
+  }, [dispatch, filters.search, filters.category]);
+
+  // ✅ Category Handler
+  const handleCategorySelect = (category: string | null) => {
+    dispatch(setFilters({ category }));
+  };
 
   // ✅ Intersection Observer for infinite scroll
   const lastPostElementRef = useCallback(
     (node: HTMLDivElement | null) => {
-      if (isLoading) {
-        console.log('⏳ Already loading, skipping...');
-        return;
-      }
-      
+      if (isLoading) return;
       if (observer.current) observer.current.disconnect();
       
       observer.current = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting && hasMore) {
-          console.log('🔄 Loading page:', currentPage + 1);
-          dispatch(fetchPosts({ 
-            page: currentPage + 1, 
-            limit: 10 
-          }));
+          fetchWrappedPosts(currentPage + 1);
         }
       });
       
       if (node) observer.current.observe(node);
     },
-    [isLoading, hasMore, currentPage, dispatch]
+    [isLoading, hasMore, currentPage, fetchWrappedPosts]
   );
 
   const handleCreatePost = () => {
@@ -191,7 +185,10 @@ const HomePage: React.FC = () => {
 
       <div className="flex">
         <div className="hidden lg:block">
-          <Sidebar />
+          <Sidebar 
+            selectedCategory={filters.category} 
+            onCategorySelect={handleCategorySelect} 
+          />
         </div>
         
         {/* Main Content */}
@@ -200,11 +197,26 @@ const HomePage: React.FC = () => {
             {/* Mobile Categories & Tags (Visible only on mobile/tablet) */}
             <div className="lg:hidden mb-6 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
               <div className="flex space-x-3">
-                <button className="px-4 py-2 bg-pink-500 text-white rounded-full text-sm font-medium whitespace-nowrap shadow-lg shadow-pink-500/20">
+                <button 
+                  onClick={() => handleCategorySelect(null)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                    !filters.category 
+                      ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/20' 
+                      : 'bg-white/10 text-gray-300 border border-white/10'
+                  }`}
+                >
                   All Posts
                 </button>
-                {['Anime Reviews', 'Manga', 'News', 'Analysis', 'Studio Ghibli'].map((cat, i) => (
-                  <button key={i} className="px-4 py-2 bg-white/10 text-gray-300 hover:text-white rounded-full text-sm font-medium whitespace-nowrap transition-colors border border-white/10">
+                {['Anime Reviews', 'Manga Discussion', 'Character Analysis'].map((cat, i) => (
+                  <button 
+                    key={i} 
+                    onClick={() => handleCategorySelect(cat)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                      filters.category === cat
+                        ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/20' 
+                        : 'bg-white/10 text-gray-300 border border-white/10'
+                    }`}
+                  >
                     {cat}
                   </button>
                 ))}
@@ -219,10 +231,10 @@ const HomePage: React.FC = () => {
                     <Star className="w-8 h-8 text-yellow-400" />
                   </div>
                   <div>
-                    <h1 className="text-xl md:text-2xl font-bold mb-1 md:mb-2">
+                    <h1 className="text-xl md:text-2xl font-bold mb-1 md:mb-2 text-gradient-rose">
                       {isAuthenticated ? `Welcome back, ${user?.name}!` : 'Welcome!'} 🎌
                     </h1>
-                    <p className="text-gray-300 text-sm md:text-base line-clamp-2 md:line-clamp-none">
+                    <p className="text-gray-300 text-sm md:text-base">
                       {isAuthenticated 
                         ? 'Check out the latest posts from your favorite creators.'
                         : 'Discover the latest anime discussions and reviews.'

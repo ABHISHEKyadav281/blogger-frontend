@@ -326,19 +326,28 @@ const postsListSlice = createSlice({
             })
             .addCase(fetchPosts.fulfilled, (state, action) => {
                 state.isLoading = false;
-                const { posts, totalPosts, currentPage, totalPages, hasMore } = action.payload;
+                const payload = action.payload;
+
+                // Robust mapping for posts
+                const posts = payload?.posts || payload?.data || payload?.content || (Array.isArray(payload) ? payload : []);
+                const totalPosts = payload?.totalPosts || payload?.totalElements || 0;
+                const currentPage = payload?.currentPage || payload?.number + 1 || 1;
+                const totalPages = payload?.totalPages || 1;
+                const hasMore = payload?.hasMore || (currentPage < totalPages) || false;
+
                 if (currentPage === 1) {
-                    state.posts = posts || [];
+                    state.posts = posts;
                 } else {
-                    const newPosts = (posts || []).filter(
+                    const newPosts = posts.filter(
                         (newPost: BlogPost) => !state.posts.find(p => p.id === newPost.id)
                     );
                     state.posts.push(...newPosts);
                 }
-                state.totalPosts = totalPosts || 0;
-                state.currentPage = currentPage || 1;
-                state.totalPages = totalPages || 1;
-                state.hasMore = hasMore || false;
+
+                state.totalPosts = totalPosts;
+                state.currentPage = currentPage;
+                state.totalPages = totalPages;
+                state.hasMore = hasMore;
                 state.error = null;
             })
             .addCase(fetchPosts.rejected, (state, action) => {
