@@ -1,9 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
-  ArrowLeft, 
-  Save, 
-  Eye, 
-  Send, 
   Image, 
   Video, 
   Link, 
@@ -15,122 +11,114 @@ import {
   Quote,
   Code,
   Smile,
-  Tag,
-  Calendar,
-  Clock,
-  Globe,
-  Lock,
-  Users,
-  AlertCircle,
   X,
-  Upload,
   FileText,
   Settings,
-  Sparkles,
-  Trash2,
+  Clock,
 } from 'lucide-react';
 
-interface PostData {
-  title: string;
-  content: string;
-  excerpt: string;
-  coverImage: string;
-  category: string;
-  tags: string[];
-  status: 'draft' | 'published' | 'scheduled';
-  visibility: 'public' | 'private' | 'followers';
-  publishDate?: string;
-  allowComments: boolean;
-  featured: boolean;
-}
+// Utility functions for Markdown conversion
+const markdownToHtml = (md: string) => {
+  if (!md) return '';
+  return md
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/<u>(.*?)<\/u>/g, '<u>$1</u>')
+    .replace(/`(.*?)`/g, '<code>$1</code>')
+    .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+    .replace(/^> (.*$)/gm, '<blockquote>$1</blockquote>')
+    .replace(/^- (.*$)/gm, '<li>$1</li>')
+    .split('\n').join('<br/>');
+};
 
-interface Category {
-  id: string;
-  name: string;
-  description: string;
-  color: string;
-}
-
-interface MediaItem {
-  id: string;
-  url: string;
-  type: 'image' | 'video';
-  name: string;
-  size: number;
-}
-
-const categories: Category[] = [
-  { id: '1', name: 'Anime Reviews', description: 'In-depth anime series and movie reviews', color: 'from-pink-500 to-red-500' },
-  { id: '2', name: 'Manga Discussion', description: 'Manga analysis and discussions', color: 'from-blue-500 to-cyan-500' },
-  { id: '3', name: 'Character Analysis', description: 'Deep dives into character development', color: 'from-purple-500 to-violet-500' },
-  { id: '4', name: 'Industry News', description: 'Latest anime industry updates', color: 'from-green-500 to-emerald-500' },
-  { id: '5', name: 'Studio Spotlights', description: 'Focusing on animation studios', color: 'from-yellow-500 to-orange-500' },
-  { id: '6', name: 'Technical Analysis', description: 'Animation and production breakdowns', color: 'from-indigo-500 to-blue-600' }
-];
-
-const popularTags = [
-  'AttackOnTitan', 'OnePiece', 'DemonSlayer', 'JujutsuKaisen', 'MyHeroAcademia',
-  'Naruto', 'DragonBall', 'StudioGhibli', 'MAPPA', 'WITStudio', 'Toei',
-  'Shonen', 'Seinen', 'Shoujo', 'Isekai', 'Mecha', 'Romance', 'Action',
-  'Comedy', 'Drama', 'Thriller', 'Horror', 'Slice of Life'
-];
+const htmlToMarkdown = (html: string) => {
+  return html
+    .replace(/<strong>(.*?)<\/strong>/g, '**$1**')
+    .replace(/<b>(.*?)<\/b>/g, '**$1**')
+    .replace(/<em>(.*?)<\/em>/g, '*$1*')
+    .replace(/<i>(.*?)<\/i>/g, '*$1*')
+    .replace(/<u>(.*?)<\/u>/g, '<u>$1</u>')
+    .replace(/<code>(.*?)<\/code>/g, '`$1`')
+    .replace(/<h2.*?>(.*?)<\/h2>/g, '## $1\n')
+    .replace(/<blockquote.*?>(.*?)<\/blockquote>/g, '> $1\n')
+    .replace(/<li.*?>(.*?)<\/li>/g, '- $1\n')
+    .replace(/<br.*?>/g, '\n')
+    .replace(/<div.*?>(.*?)<\/div>/g, '\n$1')
+    .replace(/<p.*?>(.*?)<\/p>/g, '\n$1\n')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\n\n+/g, '\n\n')
+    .trim();
+};
 
 const RichTextEditor: React.FC<{
   content: string;
   onChange: (content: string) => void;
   placeholder?: string;
-}> = ({ content, onChange, placeholder = "Start writing your anime blog post..." }) => {
-  const editorRef = useRef<HTMLTextAreaElement>(null);
-  const [selectedText, setSelectedText] = useState('');
+}> = ({ content, onChange, placeholder = "Start writing your blog..." }) => {
   const [showToolbar, setShowToolbar] = useState(true);
   const [wordCount, setWordCount] = useState(0);
   const [readingTime, setReadingTime] = useState(0);
+  
+  const editorRef = useRef<HTMLDivElement>(null);
+  const lastContentRef = useRef(content);
 
   useEffect(() => {
     const words = content.split(/\s+/).filter(word => word.length > 0).length;
     setWordCount(words);
-    setReadingTime(Math.max(1, Math.ceil(words / 200))); // Average reading speed
+    setReadingTime(Math.max(1, Math.ceil(words / 200)));
+    
+    // Update editor content if it changes externally
+    if (editorRef.current && content !== lastContentRef.current) {
+      editorRef.current.innerHTML = markdownToHtml(content);
+      lastContentRef.current = content;
+    }
   }, [content]);
 
-  const insertText = (before: string, after: string = '') => {
-    const textarea = editorRef.current;
-    if (!textarea) return;
+  // Initial load
+  useEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.innerHTML = markdownToHtml(content);
+    }
+  }, []);
 
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = content.substring(start, end);
-    const newText = content.substring(0, start) + before + selectedText + after + content.substring(end);
-    
-    onChange(newText);
-    
-    // Restore cursor position
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + before.length, end + before.length);
-    }, 0);
+  const handleInput = () => {
+    if (editorRef.current) {
+      const html = editorRef.current.innerHTML;
+      const markdown = htmlToMarkdown(html);
+      lastContentRef.current = markdown;
+      onChange(markdown);
+    }
+  };
+
+  const execCommand = (command: string, value: string = '') => {
+    document.execCommand(command, false, value);
+    handleInput();
   };
 
   const toolbarActions = [
-    { icon: Bold, action: () => insertText('**', '**'), title: 'Bold' },
-    { icon: Italic, action: () => insertText('*', '*'), title: 'Italic' },
-    { icon: Underline, action: () => insertText('<u>', '</u>'), title: 'Underline' },
-    { icon: Hash, action: () => insertText('\n## '), title: 'Heading' },
-    { icon: List, action: () => insertText('\n- '), title: 'List' },
-    { icon: Quote, action: () => insertText('\n> '), title: 'Quote' },
-    { icon: Code, action: () => insertText('`', '`'), title: 'Code' },
-    { icon: Link, action: () => insertText('[', '](url)'), title: 'Link' }
+    { icon: Bold, action: () => execCommand('bold'), title: 'Bold' },
+    { icon: Italic, action: () => execCommand('italic'), title: 'Italic' },
+    { icon: Underline, action: () => execCommand('underline'), title: 'Underline' },
+    { icon: Hash, action: () => execCommand('formatBlock', 'h2'), title: 'Heading' },
+    { icon: List, action: () => execCommand('insertUnorderedList'), title: 'List' },
+    { icon: Quote, action: () => execCommand('formatBlock', 'blockquote'), title: 'Quote' },
+    { icon: Code, action: () => execCommand('formatBlock', 'pre'), title: 'Code' },
+    { icon: Link, action: () => {
+      const url = prompt('Enter URL:');
+      if (url) execCommand('createLink', url);
+    }, title: 'Link' }
   ];
 
   return (
-    <div className="bg-white/5 border border-white/20 rounded-2xl overflow-hidden">
+    <div className="bg-white/5 border border-white/20 rounded-2xl overflow-hidden relative min-h-[500px] transition-all group-focus-within:border-primary/50 group-focus-within:bg-white/10">
       {/* Toolbar */}
       {showToolbar && (
-        <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
+        <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5 sticky top-0 z-20 backdrop-blur-md">
           <div className="flex items-center space-x-2">
             {toolbarActions.map((tool, index) => (
               <button
                 key={index}
-                onClick={tool.action}
+                onClick={(e) => { e.preventDefault(); tool.action(); }}
                 title={tool.title}
                 className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-all"
               >
@@ -150,8 +138,14 @@ const RichTextEditor: React.FC<{
           </div>
           
           <div className="flex items-center space-x-4 text-sm text-gray-400">
-            <span>{wordCount} words</span>
-            <span>{readingTime} min read</span>
+            <span className="flex items-center space-x-1">
+              <FileText className="w-4 h-4" />
+              <span>{wordCount} words</span>
+            </span>
+            <span className="flex items-center space-x-1">
+              <Clock className="w-4 h-4" />
+              <span>{readingTime} min read</span>
+            </span>
             <button
               onClick={() => setShowToolbar(false)}
               className="p-1 hover:text-white transition-colors"
@@ -173,20 +167,61 @@ const RichTextEditor: React.FC<{
 
       {/* Editor */}
       <div className="relative">
-        <textarea
+        <div
           ref={editorRef}
-          value={content}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          className="w-full min-h-96 p-6 bg-transparent text-white placeholder-gray-400 focus:outline-none resize-none font-mono leading-relaxed"
-          style={{ lineHeight: '1.8' }}
+          contentEditable
+          onInput={handleInput}
+          onBlur={handleInput}
+          className="w-full min-h-[400px] p-8 text-white placeholder-gray-500 focus:outline-none leading-relaxed prose prose-invert prose-pink max-w-none"
+          style={{ 
+            lineHeight: '1.8',
+            outline: 'none'
+          }}
+          data-placeholder={placeholder}
         />
         
+        {/* Placeholder - manually handled for contentEditable */}
+        {!content && (
+          <div className="absolute top-8 left-8 text-gray-500 pointer-events-none italic">
+            {placeholder}
+          </div>
+        )}
+
         {/* Character limit indicator */}
-        <div className="absolute bottom-4 right-4 text-xs text-gray-500 bg-black/30 px-2 py-1 rounded">
+        <div className="absolute bottom-4 right-4 text-xs text-gray-500 bg-black/30 px-2 py-1 rounded-full border border-white/10">
           {content.length}/10000
         </div>
       </div>
+
+      <style>{`
+        [contenteditable]:empty:before {
+          content: attr(data-placeholder);
+          color: #6b7280;
+          font-style: italic;
+        }
+        .prose blockquote {
+          border-left: 4px solid #ec4899;
+          padding-left: 1rem;
+          font-style: italic;
+          color: #d1d5db;
+        }
+        .prose h2 {
+          color: white;
+          font-weight: 700;
+          font-size: 1.5rem;
+          margin-top: 1.5rem;
+          margin-bottom: 1rem;
+        }
+        .prose li {
+          color: #d1d5db;
+        }
+        .prose code {
+          background: rgba(255, 255, 255, 0.1);
+          padding: 0.2rem 0.4rem;
+          border-radius: 0.25rem;
+          color: #f472b6;
+        }
+      `}</style>
     </div>
   );
 };

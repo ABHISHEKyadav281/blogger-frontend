@@ -26,6 +26,11 @@ import { useAppDispatch, useAppSelector } from '../../redux/slices/hooks';
 import { logout } from '../../redux/slices/authSlice';
 import { setFilters } from '../../redux/slices/postsListSlice';
 
+const getAvatarFallback = (username?: string) => {
+  const char = username ? username.charAt(0) : 'U';
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(char)}&background=random&color=fff&uppercase=false`;
+};
+
 // Mobile Search Component
 const MobileSearch: React.FC<{
   isOpen: boolean;
@@ -184,7 +189,7 @@ const MobileMenu: React.FC<{
             <div className="text-center pb-6 border-b border-white/10">
               <div className="relative inline-block mb-4">
                 <img
-                  src={user.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80&h=80&fit=crop&crop=face'}
+                  src={user.avatar || getAvatarFallback(user.username)}
                   alt={user.name}
                   className="w-20 h-20 rounded-full border-4 border-white/20"
                 />
@@ -393,7 +398,7 @@ const Header: React.FC = () => {
                 <div className="relative">
                   <button onClick={() => setShowProfileMenu(!showProfileMenu)} className="flex items-center space-x-2 p-1 text-gray-400 hover:text-white transition-colors">
                     <img
-                      src={user.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=40&h=40&fit=crop&crop=face'}
+                      src={user.avatar || getAvatarFallback(user.username)}
                       alt={user.name}
                       className="w-8 h-8 rounded-full border-2 border-white/20"
                     />
@@ -404,7 +409,11 @@ const Header: React.FC = () => {
                     <div className="absolute right-0 top-full mt-2 w-64 bg-black/95 backdrop-blur-xl rounded-2xl border border-white/20 shadow-2xl">
                       <div className="p-4 border-b border-white/10">
                         <div className="flex items-center space-x-3">
-                          <img src={user.avatar} alt={user.name} className="w-12 h-12 rounded-full border-2 border-white/20" />
+                          <img 
+                            src={user.avatar || getAvatarFallback(user.username)} 
+                            alt={user.name} 
+                            className="w-12 h-12 rounded-full border-2 border-white/20" 
+                          />
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-white truncate">{user.name}</p>
                             <p className="text-gray-400 text-sm">@{user.username}</p>

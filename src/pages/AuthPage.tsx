@@ -8,7 +8,7 @@ import {
   loginSuccess,
   loginFailure,
   clearError,
-  logout,
+  stopLoading,
 } from "../redux/slices/authSlice";
 import { addToast } from "../redux/slices/uiSlice";
 import api from "../utils/api";
@@ -138,10 +138,17 @@ const AuthPage: React.FC = () => {
         loginSuccess({
           user: {
             id: decoded.userId,
-            name: formData.username, // or decoded.sub if available
+            name: formData.username,
             username: formData.username,
             email: decoded.email,
-            avatar: "", // not in token
+            avatar: "",
+            isVerified: false,
+            role: 'user',
+            stats: {
+              posts: 0,
+              followers: 0,
+              following: 0
+            }
           },
           token: authToken,
         })
@@ -183,7 +190,7 @@ const AuthPage: React.FC = () => {
   // Signup function
   const handleSignup = async () => {
     try {
-      // dispatch(loginStart()); // Reuse loginStart for loading state
+      dispatch(loginStart());
 
       // Call signup API
       const response = await api.post("/auth/v1/signup", {
@@ -191,16 +198,6 @@ const AuthPage: React.FC = () => {
         email: formData.email,
         password: formData.password,
       });
-      console.log(response.data);
-
-      // Extract user and token from response
-      // // Adjust these based on your actual API response structure
-      //  response;
-      // const authToken = token || accessToken;
-
-      // if (!authToken) {
-      //   throw new Error('No token received from server');
-      // }
 
       // Show success toast
       dispatch(
@@ -211,10 +208,9 @@ const AuthPage: React.FC = () => {
           duration: 3000,
         })
       );
-      // formData.email="";
-      // Navigate to home page
-      // navigate('/login');
+      
       setIsLogin(true);
+      dispatch(stopLoading());
     } catch (error: any) {
       console.error("Signup error:", error);
 
@@ -224,7 +220,7 @@ const AuthPage: React.FC = () => {
         error.message ||
         "Signup failed. Please try again.";
 
-      // dispatch(loginFailure(errorMessage));
+      dispatch(loginFailure(errorMessage));
 
       // Show error toast
       dispatch(
@@ -449,7 +445,6 @@ const AuthPage: React.FC = () => {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isLoading}
               disabled={isLoading}
               className="w-full py-4 bg-primary text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >

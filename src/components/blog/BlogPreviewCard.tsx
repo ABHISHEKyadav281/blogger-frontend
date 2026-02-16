@@ -18,11 +18,19 @@ const BlogPreviewCard: React.FC<BlogPreviewCardProps> = ({ post }) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
+  // Function to strip HTML tags
+  const stripHtml = (html: string) => {
+    const tmp = document.createElement("DIV");
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || "";
+  };
+
   // Function to truncate content for preview
   const truncateContent = (content: string, maxLength: number = 150) => {
-    return content.length > maxLength 
-      ? content.substring(0, maxLength) + '...' 
-      : content;
+    const cleanText = stripHtml(content);
+    return cleanText.length > maxLength 
+      ? cleanText.substring(0, maxLength) + '...' 
+      : cleanText;
   };
 
   // Get the correct image source
@@ -156,7 +164,7 @@ const BlogPreviewCard: React.FC<BlogPreviewCardProps> = ({ post }) => {
 
         {/* Post Preview Content */}
         <p className="text-gray-300 mb-4 line-clamp-3 text-lg leading-relaxed">
-          {truncateContent(post.content)}
+          {truncateContent(post.excerpt || post.content)}
         </p>
 
         {/* Action Buttons */}
