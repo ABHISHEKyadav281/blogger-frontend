@@ -24,6 +24,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../redux/slices/hooks';
 import { logout } from '../../redux/slices/authSlice';
+import { setFilters } from '../../redux/slices/postsListSlice';
 
 // Mobile Search Component
 const MobileSearch: React.FC<{
@@ -34,6 +35,7 @@ const MobileSearch: React.FC<{
   const [recentSearches] = useState(['Attack on Titan', 'Studio Ghibli', 'One Piece']);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
 
   useEffect(() => {
     if (isOpen && inputRef.current) {
@@ -43,7 +45,8 @@ const MobileSearch: React.FC<{
 
   const handleSearch = (searchQuery: string) => {
     if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+      dispatch(setFilters({ search: searchQuery }));
+      navigate('/');
       onClose();
     }
   };
@@ -166,7 +169,7 @@ const MobileMenu: React.FC<{
                 <Sparkles className="w-6 h-6 text-white" />
               </div>
               <span className="text-xl font-bold">
-                Solo<span className="text-gradient-rose">Blog</span>
+                Solo<span className="text-gradient-rose">Blogger</span>
               </span>
             </div>
             <button onClick={onClose} className="p-2 text-gray-400 hover:text-white transition-colors">
@@ -210,40 +213,11 @@ const MobileMenu: React.FC<{
             </button>
 
             <button
-              onClick={() => handleNavigate('/notifications')}
-              className="w-full flex items-center space-x-3 p-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-all relative"
-            >
-              <Bell className="w-5 h-5" />
-              <span className="font-medium">Notifications</span>
-              {/* {unreadCount > 0 && (
-                <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )} */}
-            </button>
-
-            <button
               onClick={() => handleNavigate('/bookmarks')}
               className="w-full flex items-center space-x-3 p-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-all"
             >
               <Bookmark className="w-5 h-5" />
               <span className="font-medium">Bookmarks</span>
-            </button>
-
-            <button
-              onClick={() => handleNavigate('/follows')}
-              className="w-full flex items-center space-x-3 p-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-all"
-            >
-              <Users className="w-5 h-5" />
-              <span className="font-medium">My Follows</span>
-            </button>
-
-            <button
-              onClick={() => handleNavigate('/my-blogs')}
-              className="w-full flex items-center space-x-3 p-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-all"
-            >
-              <PenTool className="w-5 h-5" />
-              <span className="font-medium">My Blogs</span>
             </button>
 
             <button
@@ -254,13 +228,6 @@ const MobileMenu: React.FC<{
               <span className="font-medium">Profile</span>
             </button>
 
-            <button
-              onClick={() => handleNavigate('/settings')}
-              className="w-full flex items-center space-x-3 p-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-all"
-            >
-              <Settings className="w-5 h-5" />
-              <span className="font-medium">Settings</span>
-            </button>
           </div>
 
           {/* Logout */}
@@ -284,13 +251,19 @@ const Header: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
-  // const { unreadCount } = useAppSelector((state) => state.notifications);
+  const filters = useAppSelector((state) => state.postsList.filters);
   
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(filters.search || '');
+
+  // Keep local search query in sync with Redux filter (e.g. if cleared from HomePage)
+  useEffect(() => {
+    setSearchQuery(filters.search || '');
+  }, [filters.search]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -299,6 +272,14 @@ const Header: React.FC = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      dispatch(setFilters({ search: searchQuery }));
+      navigate('/');
+    }
+  };
 
   const handleNavigate = (path: string) => {
     navigate(path);
@@ -327,7 +308,10 @@ const Header: React.FC = () => {
         <div className="px-4 sm:px-6">
           {/* Mobile Header */}
           <div className="flex items-center justify-between h-16 lg:hidden">
-            <button onClick={() => setShowMobileMenu(true)} className="p-2 text-gray-400 hover:text-white transition-colors">
+            <button 
+              onClick={() => setShowMobileMenu(true)} 
+              className="hidden md:block p-2 text-gray-400 hover:text-white transition-colors"
+            >
               <Menu className="w-6 h-6" />
             </button>
 
@@ -336,7 +320,7 @@ const Header: React.FC = () => {
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <span className="text-lg font-bold">
-                Solo<span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-violet-400">Blog</span>
+                Solo<span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-violet-400">Blogger</span>
               </span>
             </div>
 
@@ -344,14 +328,20 @@ const Header: React.FC = () => {
               <button onClick={() => setShowMobileSearch(true)} className="p-2 text-gray-400 hover:text-white transition-colors">
                 <Search className="w-5 h-5" />
               </button>
-              
-              <button onClick={() => handleNavigate('/notifications')} className="relative p-2 text-gray-400 hover:text-white transition-colors">
+
+              <button 
+                onClick={() => handleNavigate('/notifications')} 
+                className="relative p-2 text-gray-400 hover:text-white transition-colors"
+              >
                 <Bell className="w-5 h-5" />
-                {/* {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )} */}
+              </button>
+              
+              <button 
+                onClick={handleLogout}
+                className="md:hidden p-2 text-red-400 hover:text-red-300 transition-colors"
+                title="Sign Out"
+              >
+                <LogOut className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -364,7 +354,7 @@ const Header: React.FC = () => {
                   <Sparkles className="w-6 h-6 text-white" />
                 </div>
                 <span className="text-2xl font-bold">
-                  Solo<span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-violet-400">Blog</span>
+                  Solo<span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-violet-400">Blogger</span>
                 </span>
               </div>
 
@@ -372,16 +362,16 @@ const Header: React.FC = () => {
             </div>
 
             <div className="flex-1 max-w-2xl mx-8">
-              <div className="relative">
+              <form onSubmit={handleSearchSubmit} className="relative">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search anime blogs, authors, or topics..."
-                  onClick={() => setShowMobileSearch(true)}
-                  className="w-full pl-12 pr-4 py-3 bg-white/10 border border-white/20 rounded-full text-white placeholder-gray-400 focus:outline-none focus:border-pink-400 focus:bg-white/15 transition-all duration-300 cursor-pointer"
-                  readOnly
+                  placeholder="Search title..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 bg-white/10 border border-white/20 rounded-full text-white placeholder-gray-400 focus:outline-none focus:border-pink-400 focus:bg-white/15 transition-all duration-300"
                 />
-              </div>
+              </form>
             </div>
 
             <div className="flex items-center space-x-4">
@@ -451,14 +441,14 @@ const Header: React.FC = () => {
       <MobileSearch isOpen={showMobileSearch} onClose={() => setShowMobileSearch(false)} />
 
       {/* Bottom Tab Bar (Mobile Only) */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden">
+      <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden">
         <div className="bg-black/95 backdrop-blur-xl border-t border-white/20 px-4 py-2">
           <div className="flex items-center justify-around">
             {[
               { icon: Home, label: 'Home', path: '/', active: true },
               { icon: Search, label: 'Search', action: () => setShowMobileSearch(true) },
               { icon: PenTool, label: 'Create', path: '/createPost', special: true },
-              // { icon: Bell, label: 'Notifications', path: '/notifications', badge: unreadCount },
+              { icon: Bookmark, label: 'Bookmarks', path: '/bookmarks' },
               { icon: User, label: 'Profile', path: '/profile' }
             ].map((item, idx) => (
               <button

@@ -32,10 +32,7 @@ const categories: Category[] = [
   { id: '1', name: 'Anime Reviews', description: 'In-depth anime series and movie reviews', color: 'pink' },
   { id: '2', name: 'Manga Discussion', description: 'Manga analysis and discussions', color: 'blue' },
   { id: '3', name: 'Character Analysis', description: 'Deep dives into character development', color: 'purple' },
-  { id: '4', name: 'Industry News', description: 'Latest anime industry updates', color: 'green' },
-  { id: '5', name: 'Studio Spotlights', description: 'Focusing on animation studios', color: 'yellow' },
-  { id: '6', name: 'Technical Analysis', description: 'Animation and production breakdowns', color: 'indigo' }
-];
+ ];
 
 const popularTags = [
   'AttackOnTitan', 'OnePiece', 'DemonSlayer', 'JujutsuKaisen', 'MyHeroAcademia',
