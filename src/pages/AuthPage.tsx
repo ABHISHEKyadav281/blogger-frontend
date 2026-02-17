@@ -109,11 +109,7 @@ const AuthPage: React.FC = () => {
     return Object.keys(errors).length === 0;
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("authToken");
-    dispatch(logout());
-    navigate("/login");
-  };
+
   // Login function
   const handleLogin = async () => {
     try {
@@ -270,16 +266,16 @@ const AuthPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
       {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-pink-500/20 rounded-full blur-3xl animate-pulse"></div>
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/20 rounded-full blur-3xl animate-pulse"></div>
         <div
-          className="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-500/20 rounded-full blur-3xl animate-pulse"
+          className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl animate-pulse"
           style={{ animationDelay: "1s" }}
         ></div>
         <div
-          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl animate-pulse"
+          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse"
           style={{ animationDelay: "0.5s" }}
         ></div>
       </div>
@@ -304,16 +300,16 @@ const AuthPage: React.FC = () => {
         <Sparkles size={40} />
       </div>
 
-      <div className="relative z-10 w-full max-w-md">
-        <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20">
+      <div className="relative z-10 w-full max-w-md px-4 md:px-0">
+        <div className="glass-panel rounded-2xl md:rounded-3xl p-6 md:p-8">
           {/* Logo and Title */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-pink-500 to-violet-500 rounded-full mb-4 shadow-lg">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-primary rounded-full mb-4 shadow-lg">
               <Sparkles className="w-10 h-10 text-white" />
             </div>
             <h1 className="text-3xl font-bold text-white mb-2">
               Solo
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-violet-400">
+              <span className="text-gradient-rose">
                 Blog
               </span>
             </h1>
@@ -330,7 +326,7 @@ const AuthPage: React.FC = () => {
               disabled={isLoading}
               className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all duration-300 ${
                 isLogin
-                  ? "bg-gradient-to-r from-pink-500 to-violet-500 text-white shadow-lg"
+                  ? "bg-primary text-white shadow-lg"
                   : "text-gray-300 hover:text-white"
               } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
             >
@@ -342,7 +338,7 @@ const AuthPage: React.FC = () => {
               disabled={isLoading}
               className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all duration-300 ${
                 !isLogin
-                  ? "bg-gradient-to-r from-pink-500 to-violet-500 text-white shadow-lg"
+                  ? "bg-primary text-white shadow-lg"
                   : "text-gray-300 hover:text-white"
               } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
             >
@@ -454,7 +450,8 @@ const AuthPage: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-4 bg-gradient-to-r from-pink-500 to-violet-500 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-pink-500/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              disabled={isLoading}
+              className="w-full py-4 bg-primary text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
               {isLoading ? (
                 <div className="flex items-center justify-center space-x-2">

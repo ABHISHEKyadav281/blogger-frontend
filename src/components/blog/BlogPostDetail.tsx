@@ -95,7 +95,7 @@ const BlogPostDetail: React.FC = () => {
         return (
           <blockquote
             key={index}
-            className="border-l-4 border-pink-500 pl-4 text-gray-300 italic mb-4"
+            className="border-l-4 border-primary pl-4 text-gray-300 italic mb-4"
           >
             {line.replace("> ", "")}
           </blockquote>
@@ -119,7 +119,7 @@ const BlogPostDetail: React.FC = () => {
         .replace(/`(.*?)`/g, '<code class="bg-white/10 px-1 rounded">$1</code>')
         .replace(
           /\[(.*?)\]\((.*?)\)/g,
-          '<a href="$2" class="text-pink-400 hover:underline" target="_blank" rel="noopener noreferrer">$1</a>'
+          '<a href="$2" class="text-primary hover:underline" target="_blank" rel="noopener noreferrer">$1</a>'
         );
 
       return (
@@ -180,8 +180,8 @@ const BlogPostDetail: React.FC = () => {
   // Loading state
   if (isLoading && !post) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-pink-500" />
+      <div className="min-h-screen flex items-center justify-center bg-background text-white">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary" />
       </div>
     );
   }
@@ -189,12 +189,12 @@ const BlogPostDetail: React.FC = () => {
   // Error or missing post
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white p-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background text-white p-4">
         <h2 className="text-2xl font-bold mb-4">Error Loading Post</h2>
         <p className="text-gray-300 mb-6">{error}</p>
         <button
           onClick={() => navigate("/home")}
-          className="px-6 py-2 bg-pink-500 rounded-full hover:bg-pink-600 transition-colors"
+          className="px-6 py-2 bg-primary rounded-full hover:bg-rose-600 transition-colors"
         >
           Go Home
         </button>
@@ -204,19 +204,19 @@ const BlogPostDetail: React.FC = () => {
 
   if (!post) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-pink-500" />
+      <div className="min-h-screen flex items-center justify-center bg-background text-white">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white relative z-10 pt-6">
+    <div className="min-h-screen bg-background text-white relative z-10 pt-6 pb-24 lg:pb-6">
       {/* Background effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-pink-500/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-pulse" />
         <div
-          className="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl animate-pulse"
+          className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse"
           style={{ animationDelay: "1s" }}
         />
       </div>
@@ -231,7 +231,7 @@ const BlogPostDetail: React.FC = () => {
       </button>
 
       {/* Main article */}
-      <article className="max-w-4xl mx-auto bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 overflow-hidden shadow-2xl mt-6 p-6">
+      <article className="max-w-4xl mx-auto glass-panel rounded-2xl md:rounded-3xl border border-white/20 overflow-hidden mt-4 md:mt-6 p-4 md:p-6 lg:mx-auto mx-4">
         {/* Hero image */}
         <div className="relative h-64 md:h-96 overflow-hidden rounded-t-3xl">
           <img
@@ -245,7 +245,7 @@ const BlogPostDetail: React.FC = () => {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
-            <span className="px-3 py-1 bg-pink-500/80 text-white text-sm font-medium rounded-full backdrop-blur-sm">
+            <span className="px-3 py-1 bg-primary/80 text-white text-sm font-medium rounded-full backdrop-blur-sm">
               {post.category || "Uncategorized"}
             </span>
             <div className="flex items-center space-x-4 text-gray-300 text-sm mt-2">
@@ -305,7 +305,7 @@ const BlogPostDetail: React.FC = () => {
             className={`px-6 py-3 rounded-full font-medium transition-all duration-300 ${
               isSubscribed
                 ? "bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30"
-                : "bg-gradient-to-r from-pink-500 to-violet-500 text-white hover:shadow-lg hover:scale-105"
+                : "bg-primary text-white hover:bg-rose-600 hover:shadow-lg hover:scale-105"
             } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {isSubscribed ? "Subscribed ✓" : "Subscribe"}

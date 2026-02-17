@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, Save, Eye, Send, Calendar, Globe, Lock, Users,
-  AlertCircle, X, FileText, Settings, Sparkles, Trash2, Upload
+  AlertCircle, X, FileText, Settings, Sparkles, Upload
 } from 'lucide-react';
 import axios from 'axios';
 import RichTextEditor from '../components/createPost/RichTextEditor';
@@ -63,7 +63,7 @@ const CreatePost: React.FC = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   useEffect(() => {
-    const hasContent = postData.title.trim() || postData.content.trim() || coverImageFile !== null;
+    const hasContent = !!(postData.title.trim() || postData.content.trim() || coverImageFile !== null);
     setHasUnsavedChanges(hasContent);
   }, [postData, coverImageFile]);
 
@@ -215,14 +215,14 @@ const CreatePost: React.FC = () => {
   const handleSaveAndExit = async () => { await handleSave('DRAFT'); window.history.back(); };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white">
+    <div className="min-h-screen bg-background text-white">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-pink-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
       </div>
 
       <div className="relative z-10">
-        <header className="sticky top-0 z-50 bg-black/20 backdrop-blur-xl border-b border-white/10">
+        <header className="sticky top-0 z-50 glass-panel border-b border-white/10">
           <div className="max-w-7xl mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-6">
@@ -233,7 +233,7 @@ const CreatePost: React.FC = () => {
                 </button>
                 
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-gradient-to-r from-pink-500 to-violet-500 rounded-xl">
+                  <div className="p-2 bg-primary rounded-xl">
                     <Sparkles className="w-6 h-6 text-white" />
                   </div>
                   <div>
@@ -258,7 +258,7 @@ const CreatePost: React.FC = () => {
                 </button>
 
                 <button onClick={() => handleSave('PUBLISHED')} disabled={!isFormValid || saving || publishing}
-                  className="flex items-center space-x-2 px-6 py-2 bg-gradient-to-r from-pink-500 to-violet-500 text-white font-medium rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                  className="flex items-center space-x-2 px-6 py-2 bg-primary text-white font-medium rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                   <Send className="w-4 h-4" />
                   <span>{publishing ? 'Publishing...' : 'Publish'}</span>
                 </button>
@@ -273,7 +273,7 @@ const CreatePost: React.FC = () => {
               ].map((tab) => (
                 <button key={tab.id} onClick={() => setCurrentTab(tab.id as any)}
                   className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all ${
-                    currentTab === tab.id ? 'bg-gradient-to-r from-pink-500 to-violet-500 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'
+                    currentTab === tab.id ? 'bg-primary text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'
                   }`}>
                   <tab.icon className="w-4 h-4" />
                   <span>{tab.label}</span>
@@ -285,31 +285,31 @@ const CreatePost: React.FC = () => {
 
         <main className="max-w-7xl mx-auto px-6 py-8">
           {currentTab === 'write' && (
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 pb-20 lg:pb-0">
               <div className="xl:col-span-2 space-y-6">
-                <div>
+                <div className="relative group">
                   <input type="text" placeholder="Enter your post title..." value={postData.title}
                     onChange={(e) => setPostData(prev => ({ ...prev, title: e.target.value }))}
-                    className="w-full text-3xl font-bold bg-transparent text-white placeholder-gray-400 focus:outline-none border-none" />
+                    className="w-full text-4xl font-bold bg-transparent text-white placeholder-gray-500 focus:outline-none border-b border-white/10 focus:border-primary/50 pb-4 transition-all px-0" />
                 </div>
                 
-                <div>
+                <div className="relative group">
                   <textarea placeholder="Write a compelling excerpt (optional)..." value={postData.excerpt}
-                    onChange={(e) => setPostData(prev => ({ ...prev, excerpt: e.target.value }))} rows={3}
-                    className="w-full text-lg bg-white/5 border border-white/20 rounded-xl p-4 text-white placeholder-gray-400 focus:outline-none focus:border-pink-400 resize-none" />
+                    onChange={(e) => setPostData(prev => ({ ...prev, excerpt: e.target.value }))} rows={2}
+                    className="w-full text-xl bg-transparent text-gray-300 placeholder-gray-500 focus:outline-none border-b border-white/10 focus:border-primary/50 resize-none px-0 pb-4 transition-all" />
                 </div>
 
                 <RichTextEditor content={postData.content}
                   onChange={(content) => setPostData(prev => ({ ...prev, content }))} />
 
                 {/* Tags Section - Moved from Sidebar */}
-                <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6">
+                <div className="glass-panel rounded-2xl border border-white/20 p-6">
                   <h3 className="text-lg font-semibold text-white mb-4">Tags</h3>
                   
                   {postData.tags.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-4">
                       {postData.tags.map((tag, index) => (
-                        <span key={index} className="flex items-center space-x-1 bg-pink-500/20 text-pink-300 px-3 py-1 rounded-full text-sm">
+                        <span key={index} className="flex items-center space-x-1 bg-primary/20 text-accent px-3 py-1 rounded-full text-sm">
                           <span>#{tag}</span>
                           <button onClick={() => removeTag(tag)} className="text-pink-400 hover:text-pink-300">
                             <X className="w-3 h-3" />
@@ -353,7 +353,7 @@ const CreatePost: React.FC = () => {
 
               <div className="space-y-6">
                 {/* Cover Image Upload Section */}
-                <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6">
+                <div className="glass-panel rounded-2xl border border-white/20 p-6">
                   <h3 className="text-lg font-semibold text-white mb-4">Cover Image</h3>
                   
                   {!coverImagePreview ? (
@@ -405,13 +405,13 @@ const CreatePost: React.FC = () => {
                   )}
                 </div>
 
-                <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6">
+                <div className="glass-panel rounded-2xl border border-white/20 p-6">
                   <h3 className="text-lg font-semibold text-white mb-4">Category *</h3>
                   <div className="space-y-3">
                     {categories.map((category) => (
-                      <label key={category.id}
+                        <label key={category.id}
                         className={`flex items-center p-3 rounded-xl cursor-pointer transition-all ${
-                          postData.category === category.id ? 'bg-gradient-to-r from-pink-500/20 to-violet-500/20 border border-pink-500/30' : 'bg-white/5 hover:bg-white/10 border border-white/10'
+                          postData.category === category.id ? 'bg-primary/20 border border-primary/30' : 'bg-white/5 hover:bg-white/10 border border-white/10'
                         }`}>
                         <input type="radio" name="category" value={category.id} checked={postData.category === category.id}
                           onChange={(e) => setPostData(prev => ({ ...prev, category: e.target.value }))} className="sr-only" />
@@ -434,7 +434,7 @@ const CreatePost: React.FC = () => {
                 <h2 className="text-2xl font-bold text-white mb-2">Post Preview</h2>
                 <p className="text-gray-400">This is how your post will appear to readers</p>
               </div>
-              <PostPreview postData={{...postData, coverImage: coverImagePreview || ''}} />
+              <PostPreview postData={{ ...postData, coverImage: coverImagePreview || '', status: postData.status.toLowerCase() as any, visibility: postData.visibility.toLowerCase() as any }} />
             </div>
           )}
 
@@ -445,7 +445,7 @@ const CreatePost: React.FC = () => {
                 <p className="text-gray-400">Configure publishing options and visibility</p>
               </div>
 
-              <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6">
+              <div className="glass-panel rounded-2xl border border-white/20 p-6">
                 <h3 className="text-xl font-semibold text-white mb-6">Publishing</h3>
                 
                 <div className="space-y-6">
@@ -459,7 +459,7 @@ const CreatePost: React.FC = () => {
                       ].map((status) => (
                         <label key={status.value}
                           className={`flex flex-col p-4 rounded-xl cursor-pointer transition-all ${
-                            postData.status === status.value ? 'bg-gradient-to-r from-pink-500/20 to-violet-500/20 border border-pink-500/30' : 'bg-white/5 hover:bg-white/10 border border-white/10'
+                            postData.status === status.value ? 'bg-primary/20 border border-primary/30' : 'bg-white/5 hover:bg-white/10 border border-white/10'
                           }`}>
                           <input type="radio" name="status" value={status.value} checked={postData.status === status.value}
                             onChange={(e) => setPostData(prev => ({ ...prev, status: e.target.value as any }))} className="sr-only" />
@@ -481,7 +481,7 @@ const CreatePost: React.FC = () => {
                       ].map((visibility) => (
                         <label key={visibility.value}
                           className={`flex items-center p-3 rounded-xl cursor-pointer transition-all ${
-                            postData.visibility === visibility.value ? 'bg-gradient-to-r from-pink-500/20 to-violet-500/20 border border-pink-500/30' : 'bg-white/5 hover:bg-white/10 border border-white/10'
+                            postData.visibility === visibility.value ? 'bg-primary/20 border border-primary/30' : 'bg-white/5 hover:bg-white/10 border border-white/10'
                           }`}>
                           <input type="radio" name="visibility" value={visibility.value} checked={postData.visibility === visibility.value}
                             onChange={(e) => setPostData(prev => ({ ...prev, visibility: e.target.value as any }))} className="sr-only" />
@@ -497,7 +497,7 @@ const CreatePost: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6">
+              <div className="glass-panel rounded-2xl border border-white/20 p-6">
                 <h3 className="text-xl font-semibold text-white mb-6">Interaction</h3>
                 
                 <div className="space-y-4">
@@ -541,7 +541,7 @@ const CreatePost: React.FC = () => {
             <p className="text-gray-300 mb-6">You have unsaved changes. What would you like to do?</p>
             <div className="flex flex-col space-y-3">
               <button onClick={handleSaveAndExit} disabled={saving}
-                className="flex items-center justify-center space-x-2 p-3 bg-gradient-to-r from-pink-500 to-violet-500 text-white font-medium rounded-xl hover:shadow-lg transition-all disabled:opacity-50">
+                className="flex items-center justify-center space-x-2 p-3 bg-primary text-white font-medium rounded-xl hover:shadow-lg transition-all disabled:opacity-50">
                 <Save className="w-4 h-4" />
                 <span>{saving ? 'Saving...' : 'Save Draft & Exit'}</span>
               </button>

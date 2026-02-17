@@ -87,7 +87,7 @@ const PostPreview: React.FC<{ postData: PostData }> = ({ postData }) => {
           return <h3 key={index} className="text-xl font-semibold text-white mb-3">{line.replace('### ', '')}</h3>;
         }
         if (line.startsWith('> ')) {
-          return <blockquote key={index} className="border-l-4 border-pink-500 pl-4 text-gray-300 italic mb-4">{line.replace('> ', '')}</blockquote>;
+          return <blockquote key={index} className="border-l-4 border-primary pl-4 text-gray-300 italic mb-4">{line.replace('> ', '')}</blockquote>;
         }
         if (line.startsWith('- ')) {
           return <li key={index} className="text-gray-300 mb-2 ml-4">{line.replace('- ', '')}</li>;

@@ -4,10 +4,10 @@ import Header from "../components/header";
 
 export const Layout: React.FC = () => {
   return (
-    <div className="app-container">
+    <div className="min-h-screen flex flex-col">
       <Header />
 
-      <main style={{ minHeight: "70vh" }}>
+      <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Outlet /> 
       </main>
 

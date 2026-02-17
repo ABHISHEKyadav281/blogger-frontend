@@ -10,7 +10,6 @@ import { setModal } from '../redux/slices/uiSlice';
 import BlogPreviewCard from '../components/blog/BlogPreviewCard';
 
 const Sidebar: React.FC = () => {
-  const { isAuthenticated } = useAppSelector((state) => state.auth);
 
   const categories = [
     { name: 'All Posts', count: 1247, active: true },
@@ -27,7 +26,7 @@ const Sidebar: React.FC = () => {
   ];
 
   return (
-    <aside className="w-72 bg-black/20 backdrop-blur-xl border-r border-white/10 h-screen fixed top-16 overflow-y-auto">
+    <aside className="w-72 glass-panel border-r border-white/10 h-screen fixed top-16 overflow-y-auto">
       <div className="p-6">
         {/* Categories */}
         <div className="mb-8">
@@ -41,7 +40,7 @@ const Sidebar: React.FC = () => {
                 key={index}
                 className={`w-full flex items-center justify-between p-3 rounded-xl transition-all duration-300 ${
                   category.active 
-                    ? 'bg-gradient-to-r from-pink-500/20 to-violet-500/20 border border-pink-500/30 text-white' 
+                    ? 'bg-primary/20 border border-primary/30 text-white' 
                     : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
               >
@@ -148,10 +147,10 @@ const HomePage: React.FC = () => {
   // ✅ Initial Loading state
   if (isLoading && posts.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white">
+      <div className="min-h-screen bg-background text-white">
         <div className="flex items-center justify-center h-96">
           <div className="flex flex-col items-center">
-            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-pink-500"></div>
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
             <p className="mt-4 text-gray-300">Loading amazing posts...</p>
           </div>
         </div>
@@ -162,7 +161,7 @@ const HomePage: React.FC = () => {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white">
+      <div className="min-h-screen bg-background text-white">
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
             <div className="text-6xl mb-4">⚠️</div>
@@ -172,7 +171,7 @@ const HomePage: React.FC = () => {
                 dispatch(resetPosts());
                 dispatch(fetchPosts({ page: 1, limit: 10 }));
               }}
-              className="px-6 py-3 bg-gradient-to-r from-pink-500 to-violet-500 text-white rounded-xl font-semibold hover:shadow-lg transition-all"
+              className="px-6 py-3 bg-primary text-white rounded-xl font-semibold hover:shadow-lg transition-all"
             >
               Retry
             </button>
@@ -183,41 +182,57 @@ const HomePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white">
+    <div className="min-h-screen bg-background text-white">
       {/* Background Effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-pink-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
       </div>
 
       <div className="flex">
-        <Sidebar />
+        <div className="hidden lg:block">
+          <Sidebar />
+        </div>
         
         {/* Main Content */}
-        <main className="flex-1 p-6 ml-72">
+        <main className="flex-1 p-4 lg:p-6 lg:ml-72 pb-24 lg:pb-6">
           <div className="max-w-6xl mx-auto">
+            {/* Mobile Categories & Tags (Visible only on mobile/tablet) */}
+            <div className="lg:hidden mb-6 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+              <div className="flex space-x-3">
+                <button className="px-4 py-2 bg-pink-500 text-white rounded-full text-sm font-medium whitespace-nowrap shadow-lg shadow-pink-500/20">
+                  All Posts
+                </button>
+                {['Anime Reviews', 'Manga', 'News', 'Analysis', 'Studio Ghibli'].map((cat, i) => (
+                  <button key={i} className="px-4 py-2 bg-white/10 text-gray-300 hover:text-white rounded-full text-sm font-medium whitespace-nowrap transition-colors border border-white/10">
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Welcome Banner */}
-            <div className="mb-8 p-6 bg-gradient-to-r from-pink-500/20 to-violet-500/20 backdrop-blur-xl rounded-3xl border border-pink-500/30">
-              <div className="flex items-center justify-between">
+            <div className="mb-8 p-6 glass-panel rounded-3xl border border-white/10">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center space-x-4">
-                  <div className="p-3 bg-white/10 rounded-2xl">
+                  <div className="p-3 bg-white/10 rounded-2xl shrink-0">
                     <Star className="w-8 h-8 text-yellow-400" />
                   </div>
                   <div>
-                    <h1 className="text-2xl font-bold mb-2">
-                      {isAuthenticated ? `Welcome back, ${user?.name}!` : 'Welcome, Anime Enthusiast!'} 🎌
+                    <h1 className="text-xl md:text-2xl font-bold mb-1 md:mb-2">
+                      {isAuthenticated ? `Welcome back, ${user?.name}!` : 'Welcome!'} 🎌
                     </h1>
-                    <p className="text-gray-300">
+                    <p className="text-gray-300 text-sm md:text-base line-clamp-2 md:line-clamp-none">
                       {isAuthenticated 
                         ? 'Check out the latest posts from your favorite creators.'
-                        : 'Discover the latest anime discussions, reviews, and community insights.'
+                        : 'Discover the latest anime discussions and reviews.'
                       }
                     </p>
                   </div>
                 </div>
                 
                 {/* View Mode Toggle */}
-                <div className="flex items-center space-x-2 bg-white/10 rounded-lg p-1">
+                <div className="flex items-center space-x-2 bg-white/10 rounded-lg p-1 self-end md:self-auto">
                   <button
                     onClick={() => setViewMode('list')}
                     className={`p-2 rounded transition-all ${
@@ -252,7 +267,7 @@ const HomePage: React.FC = () => {
                 </p>
                 <button 
                   onClick={handleCreatePost}
-                  className="px-6 py-3 bg-gradient-to-r from-pink-500 to-violet-500 text-white font-medium rounded-xl hover:shadow-lg transition-all"
+                  className="px-6 py-3 bg-primary text-white font-medium rounded-xl hover:shadow-lg transition-all"
                 >
                   Create First Post
                 </button>

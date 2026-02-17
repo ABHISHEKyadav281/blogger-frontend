@@ -162,11 +162,11 @@ const MobileMenu: React.FC<{
         <div className="sticky top-0 bg-black/90 backdrop-blur-xl border-b border-white/10 p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-pink-500 to-violet-500 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
                 <Sparkles className="w-6 h-6 text-white" />
               </div>
               <span className="text-xl font-bold">
-                Solo<span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-violet-400">Blog</span>
+                Solo<span className="text-gradient-rose">Blog</span>
               </span>
             </div>
             <button onClick={onClose} className="p-2 text-gray-400 hover:text-white transition-colors">
@@ -323,7 +323,7 @@ const Header: React.FC = () => {
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-gradient-to-r from-purple-900 via-blue-900 to-indigo-900 border-b border-white/10">
+      <header className="sticky top-0 z-40 glass-panel border-b border-white/10">
         <div className="px-4 sm:px-6">
           {/* Mobile Header */}
           <div className="flex items-center justify-between h-16 lg:hidden">
@@ -332,7 +332,7 @@ const Header: React.FC = () => {
             </button>
 
             <div className="flex items-center space-x-2" onClick={() => navigate('/')}>
-              <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-violet-500 rounded-full flex items-center justify-center">
+              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <span className="text-lg font-bold">
@@ -360,7 +360,7 @@ const Header: React.FC = () => {
           <div className="hidden lg:flex items-center justify-between h-16">
             <div className="flex items-center space-x-8">
               <div className="flex items-center space-x-2 cursor-pointer" onClick={() => navigate('/')}>
-                <div className="w-10 h-10 bg-gradient-to-r from-pink-500 to-violet-500 rounded-full flex items-center justify-center">
+                <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
                   <Sparkles className="w-6 h-6 text-white" />
                 </div>
                 <span className="text-2xl font-bold">
@@ -385,7 +385,7 @@ const Header: React.FC = () => {
             </div>
 
             <div className="flex items-center space-x-4">
-              <button onClick={() => navigate('/createPost')} className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-pink-500 to-violet-500 text-white font-medium rounded-xl hover:shadow-lg transition-all">
+              <button onClick={() => navigate('/createPost')} className="flex items-center space-x-2 px-4 py-2 bg-primary text-primary-foreground font-medium rounded-xl hover:bg-rose-700 transition-all shadow-lg hover:shadow-rose-500/20">
                 <PenTool className="w-4 h-4" />
                 <span>Create</span>
               </button>
@@ -477,7 +477,7 @@ const Header: React.FC = () => {
                 onClick={() => item.action ? item.action() : navigate(item.path!)}
                 className={`relative flex flex-col items-center space-y-1 p-2 transition-all ${
                   item.special
-                    ? 'p-3 bg-gradient-to-r from-pink-500 to-violet-500 rounded-full -mt-4 shadow-lg'
+                    ? 'p-3 bg-gradient-to-r from-rose-500 to-orange-400 rounded-full -mt-4 shadow-lg'
                     : item.active
                     ? 'text-pink-400'
                     : 'text-gray-400 hover:text-white'

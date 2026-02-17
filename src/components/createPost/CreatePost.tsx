@@ -430,7 +430,7 @@ const CreatePost: React.FC = () => {
 
       <div className="relative z-10">
         <header className="sticky top-0 z-50 bg-black/20 backdrop-blur-xl border-b border-white/10">
-          <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-6">
                 <button
@@ -503,9 +503,9 @@ const CreatePost: React.FC = () => {
           </div>
         </header>
 
-        <main className="max-w-7xl mx-auto px-6 py-8">
+        <main className="px-4 py-8 border-x border-b border-white/10 max-w-7xl mx-auto">
           {currentTab === 'write' && (
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
               <div className="xl:col-span-2 space-y-6">
                 <div>
                   <input
@@ -674,7 +674,7 @@ const CreatePost: React.FC = () => {
           )}
 
           {currentTab === 'preview' && (
-            <div className="max-w-4xl mx-auto">
+            <div>
               <div className="mb-6">
                 <h2 className="text-2xl font-bold text-white mb-2">Post Preview</h2>
                 <p className="text-gray-400">This is how your post will appear to readers</p>
@@ -684,7 +684,7 @@ const CreatePost: React.FC = () => {
           )}
 
           {currentTab === 'settings' && (
-            <div className="max-w-2xl mx-auto space-y-8">
+            <div className="space-y-8">
               <div>
                 <h2 className="text-2xl font-bold text-white mb-2">Post Settings</h2>
                 <p className="text-gray-400">Configure publishing options and visibility</p>
