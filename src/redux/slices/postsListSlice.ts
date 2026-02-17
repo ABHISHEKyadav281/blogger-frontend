@@ -150,6 +150,20 @@ export const likePost = createAsyncThunk(
     }
 );
 
+export const fetchBookmarkedPosts = createAsyncThunk(
+    'postsList/fetchBookmarkedPosts',
+    async ({ page = 1, limit = 10 }: { page?: number; limit?: number } = {}, { rejectWithValue }) => {
+        try {
+            const response = await api.get('/post/v1/bookmarks', {
+                params: { page, limit }
+            });
+            return response.data;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.message || 'Failed to fetch bookmarked posts');
+        }
+    }
+);
+
 const postsListSlice = createSlice({
     name: 'postsList',
     initialState,
@@ -339,6 +353,35 @@ const postsListSlice = createSlice({
                 };
                 state.posts.forEach(updatePostFromAPI);
                 state.bookmarkedPosts.forEach(updatePostFromAPI);
+            });
+
+
+        // fetchBookmarkedPosts
+        builder
+            .addCase(fetchBookmarkedPosts.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(fetchBookmarkedPosts.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.bookmarkedPosts = action.payload.posts || [];
+                // If we want to show them in the main list, we can also set state.posts
+                // For a specific "My Bookmarks" page, we might want to use state.posts or state.bookmarkedPosts
+                // Let's assume the page will read from state.posts if we use a separate page logic,
+                // or we can just populate state.posts to reuse the list component.
+                // However, the interface has a specific `bookmarkedPosts` field.
+                // Let's populate state.posts so we can reuse generic list selectors/components if they rely on it,
+                // BUT wait, `bookmarkedPosts` exists in state.
+                // Let's settle on using state.posts for the current view to allow pagination etc using the same variables.
+                state.posts = action.payload.posts || [];
+                state.totalPosts = action.payload.totalPosts || 0;
+                state.currentPage = action.payload.currentPage || 1;
+                state.totalPages = action.payload.totalPages || 1;
+                state.hasMore = action.payload.hasMore || false;
+            })
+            .addCase(fetchBookmarkedPosts.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload as string || 'Failed to fetch bookmarked posts';
             });
     },
 });

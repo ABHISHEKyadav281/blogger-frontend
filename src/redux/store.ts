@@ -5,6 +5,7 @@ import postsListSlice from './slices/postsListSlice';
 import postDetailSlice from './slices/postDetailSlice';
 import searchSlice from './slices/searchSlice';
 import uiSlice from './slices/uiSlice';
+import subscriptionsReducer from './slices/userSubscriptionsSlice';
 
 const listenerMiddleware = createListenerMiddleware();
 
@@ -33,6 +34,7 @@ export const store = configureStore({
     postDetail: postDetailSlice,
     search: searchSlice,
     ui: uiSlice,
+    subscriptions: subscriptionsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
