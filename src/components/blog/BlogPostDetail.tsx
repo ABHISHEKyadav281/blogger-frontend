@@ -15,8 +15,9 @@ import { useAppDispatch, useAppSelector } from "../../redux/slices/hooks";
 import {
   fetchPostById,
   clearDetailError,
+  fetchPostLikeCount,
 } from "../../redux/slices/postDetailSlice";
-import { toggleLike, toggleBookmark } from "../../redux/slices/postsListSlice";
+import { toggleLike, toggleBookmark, likePost, bookmarkPost } from "../../redux/slices/postsListSlice";
 import {
   selectFollowerCount,
 } from "../../redux/slices/userSubscriptionsSlice";
@@ -33,6 +34,11 @@ const BlogPostDetail: React.FC = () => {
     error,
   } = useAppSelector((state) => state.postDetail);
 
+  // Debug: Log when likesCount changes
+  useEffect(() => {
+    console.log('Component re-rendered, post.likesCount:', post?.likesCount);
+  }, [post?.likesCount]);
+
   // ✅ Get subscription status from new slice
   const bloggerId = post?.author?.id;
   console.log(bloggerId);
@@ -45,7 +51,14 @@ const BlogPostDetail: React.FC = () => {
   useEffect(() => {
     if (postId) {
       console.log("Fetching post details for:", postId);
-      dispatch(fetchPostById(postId));
+      // Fetch post first, then fetch like count after it completes
+      dispatch(fetchPostById(postId))
+        .unwrap()
+        .then(() => {
+          console.log("Post loaded, now fetching like count");
+          dispatch(fetchPostLikeCount(postId));
+        })
+        .catch((err) => console.error("Failed to fetch post:", err));
     }
     return () => {
       dispatch(clearDetailError());
@@ -132,13 +145,34 @@ const BlogPostDetail: React.FC = () => {
     });
   };
 
-  // Action handlers
   const handleLike = () => {
-    if (post) dispatch(toggleLike(post.id));
+    if (post) {
+        // Optimistic update
+        dispatch(toggleLike(post.id));
+        // API call
+        dispatch(likePost({ postId: post.id, isLiked: post.isLiked }))
+            .unwrap()
+            .then(res => console.log("Like success:", res))
+            .catch(err => {
+                console.error("Like failed:", err);
+                // Revert on error
+                dispatch(toggleLike(post.id));
+            });
+    }
   };
 
   const handleBookmark = () => {
-    if (post) dispatch(toggleBookmark(post.id));
+    if (post) {
+      dispatch(toggleBookmark(post.id));
+      dispatch(bookmarkPost({ postId: post.id, isBookmarked: !!post.isBookmarked }))
+          .unwrap()
+          .then(res => console.log("Bookmark success:", res))
+          .catch(err => {
+              console.error("Bookmark failed:", err);
+              // Revert if failed
+              dispatch(toggleBookmark(post.id));
+          });
+    }
   };
 
   // ✅ Updated subscribe handler
@@ -278,10 +312,20 @@ const BlogPostDetail: React.FC = () => {
                 "https://via.placeholder.com/150"
               }
               alt={post.author?.name || post.user?.name || "Author"}
-              className="w-14 h-14 rounded-full border-2 border-white/20"
+              className="w-14 h-14 rounded-full border-2 border-white/20 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+              onClick={() => {
+                const id = post.author?.id || post.user?.id;
+                if (id) navigate(`/profile/${id}`);
+              }}
             />
             <div>
-              <h3 className="font-semibold text-white text-lg">
+              <h3 
+                className="font-semibold text-white text-lg cursor-pointer hover:text-primary transition-colors"
+                onClick={() => {
+                  const id = post.author?.id || post.user?.id;
+                  if (id) navigate(`/profile/${id}`);
+                }}
+              >
                 {post.author?.username ||
                   post.user?.username ||
                   "Unknown Author"}
@@ -342,21 +386,21 @@ const BlogPostDetail: React.FC = () => {
             <button
               onClick={handleLike}
               className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-all duration-300 ${
-                post.stats?.isLiked
+                post.isLiked
                   ? "text-red-400 bg-red-500/20 hover:bg-red-500/30"
                   : "text-gray-400 hover:text-red-400 hover:bg-red-500/10"
               }`}
             >
               <Heart
                 className={`w-5 h-5 ${
-                  post.stats?.isLiked ? "fill-current" : ""
+                  post.isLiked ? "fill-current" : ""
                 }`}
               />
-              <span>{post.stats?.likes || 0}</span>
+              <span>{post.likesCount || 0}</span>
             </button>
             <div className="flex items-center space-x-2 px-4 py-2 text-gray-400">
               <MessageCircle className="w-5 h-5" />
-              <span>{post.stats?.comments || 0}</span>
+              <span>{post.commentsCount || 0}</span>
             </div>
             <button
               onClick={() => handleShare("copy")}
@@ -369,14 +413,14 @@ const BlogPostDetail: React.FC = () => {
           <button
             onClick={handleBookmark}
             className={`p-2 rounded-full transition-all duration-300 ${
-              post.stats?.isBookmarked
+              post.isBookmarked
                 ? "text-yellow-400 bg-yellow-500/20 hover:bg-yellow-500/30"
                 : "text-gray-400 hover:text-yellow-400 hover:bg-yellow-500/10"
             }`}
           >
             <Bookmark
               className={`w-5 h-5 ${
-                post.stats?.isBookmarked ? "fill-current" : ""
+                post.isBookmarked ? "fill-current" : ""
               }`}
             />
           </button>

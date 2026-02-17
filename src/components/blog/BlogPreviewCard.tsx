@@ -26,11 +26,29 @@ const BlogPreviewCard: React.FC<BlogPreviewCardProps> = ({ post }) => {
   };
 
   // Get the correct image source
-  const getImageSource = () => {
-    if (post.coverImage) {
-      return post.coverImage;
+   const getImageSource = () => {
+    if (!post)
+      return "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&h=600&fit=crop";
+    
+    // Check for coverImageData (Base64)
+    const postAny = post as any;
+    if (postAny.coverImageData) {
+        if (postAny.coverImageData.startsWith('data:image')) {
+            return postAny.coverImageData;
+        }
+        // Assume JPEG if no prefix
+        return `data:image/jpeg;base64,${postAny.coverImageData}`;
     }
-    return 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=400&fit=crop';
+
+    // Check for coverImage (URL)
+    if (post.coverImage) {
+        if (post.coverImage.startsWith('http')) return post.coverImage;
+        // If relative path, prepend backend URL? Or maybe it's base64 without prefix?
+        // Let's assume it might be relative path served by backend static files
+        return `http://localhost:8080${post.coverImage.startsWith('/') ? '' : '/'}${post.coverImage}`;
+    }
+    
+    return "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&h=600&fit=crop";
   };
 
   const handleCardClick = (e: React.MouseEvent) => {
@@ -85,10 +103,22 @@ const BlogPreviewCard: React.FC<BlogPreviewCardProps> = ({ post }) => {
             <img
               src={post.author?.avatar || 'https://via.placeholder.com/40'}
               alt={post.author?.username}
-              className="w-10 h-10 rounded-full"
+              className="w-10 h-10 rounded-full cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (post.author?.id) navigate(`/profile/${post.author.id}`);
+              }}
             />
             <div>
-              <p className="font-bold text-lg text-white mb-1 capitalize">{post.author?.username}</p> {/* Gap user name and post time */}
+              <p 
+                className="font-bold text-lg text-white mb-1 capitalize cursor-pointer hover:text-primary transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (post.author?.id) navigate(`/profile/${post.author.id}`);
+                }}
+              >
+                {post.author?.username}
+              </p> {/* Gap user name and post time */}
               <div className="flex items-center space-x-2 text-sm text-gray-400">
                 <Calendar className="w-4 h-4" />
                 <span>{post.publishDate}</span>

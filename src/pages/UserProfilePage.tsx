@@ -1,4 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useAppDispatch, useAppSelector } from '../redux/slices/hooks';
+import { fetchUserDetails, fetchUserPosts } from '../redux/slices/userProfileSlice';
+import api from '../utils/api';
 import { 
   ArrowLeft, 
   Edit3, 
@@ -687,6 +691,7 @@ const EditProfileModal: React.FC<{
 const UserProfilePage: React.FC = () => {
   const [user, setUser] = useState(sampleUser);
   const [posts, setPosts] = useState(samplePosts);
+  const [isSubscribed, setIsSubscribed] = useState(false);
   const [activity] = useState(sampleActivity);
   const [activeTab, setActiveTab] = useState<'posts' | 'activity' | 'about'>('posts');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -696,7 +701,111 @@ const UserProfilePage: React.FC = () => {
   const [filterCategory, setFilterCategory] = useState('all');
   const [sortBy, setSortBy] = useState<'newest' | 'popular' | 'oldest'>('newest');
   
-  const isOwnProfile = true; // This would be determined by comparing with current user ID
+  const { userId: urlUserId } = useParams<{ userId?: string }>();
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const { 
+    data: profileData, 
+    posts: profilePosts,
+    isLoading, 
+    isPostsLoading,
+    error: profileError,
+    postsError
+  } = useAppSelector((state) => state.userProfile);
+  const { user: authUser } = useAppSelector((state) => state.auth);
+
+  const userId = urlUserId || authUser?.id;
+  const isOwnProfile = !urlUserId || urlUserId === authUser?.id;
+
+  useEffect(() => {
+    if (userId) {
+      dispatch(fetchUserDetails(userId));
+      dispatch(fetchUserPosts({ userId }));
+      
+      // Fetch subscription status
+      if (!isOwnProfile) {
+        api.get(`/user/action/is-subscribed?bloggerId=${userId}`)
+          .then(resp => setIsSubscribed(resp.data))
+          .catch(err => console.error("Failed to fetch subscription status:", err));
+      }
+    }
+  }, [dispatch, userId]);
+
+  useEffect(() => {
+    if (profileData) {
+      const mappedUser: User = {
+        id: profileData.id || userId || '',
+        name: profileData.firstName && profileData.lastName 
+          ? `${profileData.firstName} ${profileData.lastName}` 
+          : profileData.username,
+        username: profileData.username,
+        avatar: profileData.profileImage || `https://ui-avatars.com/api/?name=${profileData.username}&background=random`,
+        coverImage: profileData.coverImage || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&h=400&fit=crop',
+        bio: profileData.bio || 'No bio provided',
+        location: profileData.location || 'Unknown location',
+        website: profileData.website || '',
+        joinDate: 'March 2024', // Fallback
+        email: profileData.email,
+        isVerified: false, // Fallback
+        role: 'user', // Fallback
+        stats: {
+          posts: profileData.posts,
+          followers: profileData.followers,
+          following: profileData.following,
+          likes: profileData.totalLikes
+        },
+        socialLinks: {}, // Fallback
+        preferences: {
+          showEmail: false,
+          allowMessages: true,
+          showActivity: true
+        }
+      };
+      setUser(mappedUser);
+    }
+
+    if (profilePosts) {
+      const mappedPosts: Post[] = profilePosts.map((p: any) => {
+        // Robust image resolution logic matching BlogPreviewCard
+        let resolvedCoverImage = 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=200&fit=crop';
+        
+        if (p.coverImageData) {
+          resolvedCoverImage = p.coverImageData.startsWith('data:image') 
+            ? p.coverImageData 
+            : `data:image/jpeg;base64,${p.coverImageData}`;
+        } else if (p.coverImage) {
+          resolvedCoverImage = p.coverImage.startsWith('http') 
+            ? p.coverImage 
+            : `http://localhost:8080${p.coverImage.startsWith('/') ? '' : '/'}${p.coverImage}`;
+        } else if (p.mediaUrl) {
+          resolvedCoverImage = p.mediaUrl.startsWith('http') 
+            ? p.mediaUrl 
+            : `http://localhost:8080${p.mediaUrl.startsWith('/') ? '' : '/'}${p.mediaUrl}`;
+        }
+
+        return {
+          id: p.id ? p.id.toString() : '',
+          title: p.title || 'Untitled Post',
+          excerpt: p.content ? p.content.substring(0, 160) + '...' : 'No content available',
+          content: p.content || '',
+          coverImage: resolvedCoverImage,
+          category: p.category || 'General',
+          tags: p.tags || [],
+          publishDate: p.createdAt ? new Date(p.createdAt).toLocaleDateString() : 'Recent',
+          readTime: '5 min read',
+          stats: {
+            likes: p.likesCount || 0,
+            comments: p.commentsCount || 0,
+            views: 0,
+            isLiked: p.isLiked || false,
+            isBookmarked: p.isBookmarked || false
+          },
+          status: p.status?.toLowerCase() || 'published'
+        };
+      });
+      setPosts(mappedPosts);
+    }
+  }, [profileData, profilePosts, userId]);
 
   const categories = ['all', 'Reviews', 'Studio Analysis', 'Character Study'];
 
@@ -719,8 +828,20 @@ const UserProfilePage: React.FC = () => {
     }
   });
 
-  const handleFollow = () => {
-    setUser(prev => ({ ...prev, isFollowing: !prev.isFollowing }));
+  const handleSubscribe = async () => {
+    if (userId && !isOwnProfile) {
+      try {
+        if (!isSubscribed) {
+          await api.post(`/user/action/subscribe?bloggerId=${userId}`);
+          setIsSubscribed(true);
+        } else {
+          await api.post(`/user/action/unsubscribe?bloggerId=${userId}`);
+          setIsSubscribed(false);
+        }
+      } catch (error) {
+        console.error("Subscription action failed:", error);
+      }
+    }
   };
 
   const handleLikePost = (postId: string) => {
@@ -753,8 +874,7 @@ const UserProfilePage: React.FC = () => {
   };
 
   const handleViewPost = (postId: string) => {
-    console.log('View post:', postId);
-    // Navigate to post detail
+    navigate(`/post/${postId}`);
   };
 
   const handleSaveProfile = (updatedUser: Partial<User>) => {
@@ -784,6 +904,24 @@ const UserProfilePage: React.FC = () => {
       </div>
 
       <div className="relative z-10">
+        {isLoading && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm">
+            <div className="flex flex-col items-center space-y-4">
+              <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-lg font-medium text-white animate-pulse">Loading Profile...</p>
+            </div>
+          </div>
+        )}
+
+        {profileError && (
+          <div className="max-w-7xl mx-auto px-6 pt-4">
+            <div className="p-4 bg-red-500/20 border border-red-500/50 rounded-2xl text-red-200 flex items-center space-x-3">
+              <Ban className="w-5 h-5 flex-shrink-0" />
+              <p>{profileError}</p>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <header className="sticky top-0 z-50 glass-panel border-b border-white/10">
           <div className="max-w-7xl mx-auto px-6 py-4">
@@ -897,27 +1035,24 @@ const UserProfilePage: React.FC = () => {
                       {!isOwnProfile && (
                         <>
                           <button
-                            onClick={handleFollow}
+                            onClick={handleSubscribe}
                             className={`px-6 py-3 rounded-xl font-medium transition-all ${
-                              user.isFollowing
+                              isSubscribed
                                 ? 'bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30'
                                 : 'bg-gradient-to-r from-pink-500 to-violet-500 text-white hover:shadow-lg'
                             }`}
                           >
-                            {user.isFollowing ? (
+                            {isSubscribed ? (
                               <span className="flex items-center space-x-2">
                                 <UserCheck className="w-4 h-4" />
-                                <span>Following</span>
+                                <span>Subscribed</span>
                               </span>
                             ) : (
                               <span className="flex items-center space-x-2">
                                 <UserPlus className="w-4 h-4" />
-                                <span>Follow</span>
+                                <span>Subscribe</span>
                               </span>
                             )}
-                          </button>
-                          <button className="px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-xl transition-all">
-                            Message
                           </button>
                         </>
                       )}
@@ -1111,7 +1246,18 @@ const UserProfilePage: React.FC = () => {
                 </div>
 
                 {/* Posts Grid/List */}
-                {sortedPosts.length === 0 ? (
+                {isPostsLoading ? (
+                  <div className="flex flex-col items-center justify-center py-16">
+                    <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p className="text-gray-400">Loading posts...</p>
+                  </div>
+                ) : postsError ? (
+                  <div className="text-center py-16 bg-red-500/5 rounded-2xl border border-red-500/10">
+                    <Ban className="w-16 h-16 text-red-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-white mb-2">Error loading posts</h3>
+                    <p className="text-gray-400">{postsError}</p>
+                  </div>
+                ) : sortedPosts.length === 0 ? (
                   <div className="text-center py-16 bg-white/5 rounded-2xl border border-white/10">
                     <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-xl font-semibold text-white mb-2">No posts found</h3>

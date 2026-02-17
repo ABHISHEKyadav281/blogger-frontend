@@ -431,18 +431,7 @@ const Header: React.FC = () => {
                           <Bookmark className="w-5 h-5" />
                           <span>Bookmarks</span>
                         </button>
-                        <button onClick={() => handleNavigate('/follows')} className="w-full flex items-center space-x-3 p-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-all">
-                          <Users className="w-5 h-5" />
-                          <span>My Follows</span>
-                        </button>
-                        <button onClick={() => handleNavigate('/my-blogs')} className="w-full flex items-center space-x-3 p-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-all">
-                          <PenTool className="w-5 h-5" />
-                          <span>My Blogs</span>
-                        </button>
-                        <button onClick={() => handleNavigate('/settings')} className="w-full flex items-center space-x-3 p-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-all">
-                          <Settings className="w-5 h-5" />
-                          <span>Settings</span>
-                        </button>
+                        
                         <hr className="my-2 border-white/10" />
                         <button onClick={handleLogout} className="w-full flex items-center space-x-3 p-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-all">
                           <LogOut className="w-5 h-5" />

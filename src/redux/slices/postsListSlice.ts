@@ -85,7 +85,7 @@ export const fetchFeaturedPosts = createAsyncThunk(
             const response = await api.get('/post/v1/featured', {
                 params: { page, limit }
             });
-            return response.data;
+            return response as any;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message || 'Failed to fetch featured posts');
         }
@@ -107,7 +107,7 @@ export const fetchUserPosts = createAsyncThunk(
             const response = await api.get(`/post/v1/user/${userId}`, {
                 params: { page, limit }
             });
-            return response.data;
+            return response as any;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message || 'Failed to fetch user posts');
         }
@@ -119,7 +119,7 @@ export const createPost = createAsyncThunk(
     async (postData: any, { rejectWithValue }) => {
         try {
             const response = await api.post('/post/v1/createPost', postData);
-            return response.data;
+            return response as any;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message || 'Failed to create post');
         }
@@ -140,12 +140,56 @@ export const deletePost = createAsyncThunk(
 
 export const likePost = createAsyncThunk(
     'postsList/likePost',
-    async (postId: string, { rejectWithValue }) => {
+    async ({ postId, isLiked }: { postId: string, isLiked: boolean }, { rejectWithValue }) => {
+        console.log("Inside likePost thunk for:", postId, "Current State:", isLiked);
         try {
-            const response = await api.post(`/post/v1/posts/${postId}/like`);
+            console.log("Calling API...");
+            // If already liked, send DISLIKE to unlike it
+            // If not liked, send LIKE to like it
+            const reactionType = isLiked ? 'DISLIKE' : 'LIKE';
+            console.log("Sending reactionType:", reactionType);
+
+            const response = await api.post(`/reaction/post/react`, null, {
+                params: {
+                    postId,
+                    reactionType
+                }
+            });
             return response.data;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message || 'Failed to like post');
+        }
+    }
+);
+
+export const dislikePost = createAsyncThunk(
+    'postsList/dislikePost',
+    async ({ postId, isDisliked }: { postId: string, isDisliked: boolean }, { rejectWithValue }) => {
+        console.log("Inside dislikePost thunk for:", postId, "Current State:", isDisliked);
+        try {
+            const response = await api.post(`/reaction/post/react`, null, {
+                params: {
+                    postId,
+                    reactionType: 'DISLIKE'
+                }
+            });
+            return response.data;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.message || 'Failed to dislike post');
+        }
+    }
+);
+
+export const bookmarkPost = createAsyncThunk(
+    'postsList/bookmarkPost',
+    async ({ postId, isBookmarked }: { postId: string; isBookmarked: boolean }, { rejectWithValue }) => {
+        try {
+            const endpoint = isBookmarked ? `/user/action/unbookmark?postId=${postId}` : `/user/action/bookmark?postId=${postId}`;
+            await api.post(endpoint);
+            // Return the NEW state (if we were bookmarked, we are now NOT bookmarked, so return false)
+            return { postId, isBookmarked: !isBookmarked };
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.message || 'Failed to update bookmark');
         }
     }
 );
@@ -154,10 +198,10 @@ export const fetchBookmarkedPosts = createAsyncThunk(
     'postsList/fetchBookmarkedPosts',
     async ({ page = 1, limit = 10 }: { page?: number; limit?: number } = {}, { rejectWithValue }) => {
         try {
-            const response = await api.get('/post/v1/bookmarks', {
+            const response = await api.get('/user/action/bookmarked/posts', {
                 params: { page, limit }
             });
-            return response.data;
+            return response as any;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message || 'Failed to fetch bookmarked posts');
         }
@@ -172,19 +216,37 @@ const postsListSlice = createSlice({
             const postId = action.payload;
             const updatePostLike = (post: BlogPost) => {
                 if (post.id === postId) {
-                    post.stats.isLiked = !post.stats.isLiked;
-                    post.stats.likes += post.stats.isLiked ? 1 : -1;
+                    post.isLiked = !post.isLiked;
+                    post.likesCount += post.isLiked ? 1 : -1;
                 }
             };
             state.posts.forEach(updatePostLike);
             state.bookmarkedPosts.forEach(updatePostLike);
         },
+        toggleDislike: (state, action: PayloadAction<string>) => {
+            const postId = action.payload;
+            const updatePostDislike = (post: BlogPost) => {
+                if (post.id === postId) {
+                    // If already liked, remove like
+                    if (post.isLiked) {
+                        post.isLiked = false;
+                        post.likesCount = Math.max(0, post.likesCount - 1);
+                    }
+
+                    post.isDisliked = !post.isDisliked;
+                    // We don't strictly track dislikesCount in UI often, but let's update it if we have it
+                    post.likesCount = (post.likesCount || 0) + (post.isDisliked ? -1 : 1);
+                }
+            };
+            state.posts.forEach(updatePostDislike);
+            state.bookmarkedPosts.forEach(updatePostDislike);
+        },
         toggleBookmark: (state, action: PayloadAction<string>) => {
             const postId = action.payload;
             const updatePostBookmark = (post: BlogPost) => {
                 if (post.id === postId) {
-                    post.stats.isBookmarked = !post.stats.isBookmarked;
-                    if (post.stats.isBookmarked) {
+                    post.isBookmarked = !post.isBookmarked;
+                    if (post.isBookmarked) {
                         if (!state.bookmarkedPosts.find(p => p.id === postId)) {
                             state.bookmarkedPosts.push(post);
                         }
@@ -344,15 +406,57 @@ const postsListSlice = createSlice({
         // likePost
         builder
             .addCase(likePost.fulfilled, (state, action) => {
-                const { postId, isLiked, likesCount } = action.payload;
+                const { postId, liked, likesCount } = action.payload;
                 const updatePostFromAPI = (post: BlogPost) => {
                     if (post.id === postId) {
-                        post.stats.isLiked = isLiked;
-                        post.stats.likes = likesCount;
+                        post.isLiked = liked;
+                        post.likesCount = likesCount;
                     }
                 };
                 state.posts.forEach(updatePostFromAPI);
                 state.bookmarkedPosts.forEach(updatePostFromAPI);
+            });
+
+        // dislikePost
+        builder
+            .addCase(dislikePost.fulfilled, (state, action) => {
+                const { postId, isDisliked, dislikesCount, isLiked, likesCount } = action.payload;
+                const updatePostFromAPI = (post: BlogPost) => {
+                    if (post.id === postId) {
+                        post.isDisliked = isDisliked;
+                        if (dislikesCount !== undefined) post.dislikesCount = dislikesCount;
+                        // Also update like status/count as they might change (mutual exclusion)
+                        if (isLiked !== undefined) post.isLiked = isLiked;
+                        if (likesCount !== undefined) post.likesCount = likesCount;
+                    }
+                };
+                state.posts.forEach(updatePostFromAPI);
+                state.bookmarkedPosts.forEach(updatePostFromAPI);
+            });
+
+        // bookmarkPost
+        builder
+            .addCase(bookmarkPost.fulfilled, (state, action) => {
+                const { postId, isBookmarked } = action.payload;
+                const updatePostBookmark = (post: BlogPost) => {
+                    if (post.id === postId) {
+                        post.isBookmarked = isBookmarked;
+                    }
+                };
+                state.posts.forEach(updatePostBookmark);
+
+                // Sync bookmarkedPosts array
+                if (!isBookmarked) {
+                    state.bookmarkedPosts = state.bookmarkedPosts.filter(p => p.id !== postId);
+                } else {
+                    // Logic to add to bookmarkedPosts if not present is complex without full post object, 
+                    // but usually we toggle on existing list so it might be there.
+                    // If we don't have the post object in payload, we can't push it easily unless we find it in state.posts.
+                    const foundPost = state.posts.find(p => p.id === postId);
+                    if (foundPost && !state.bookmarkedPosts.find(p => p.id === postId)) {
+                        state.bookmarkedPosts.push(foundPost);
+                    }
+                }
             });
 
 
@@ -364,20 +468,25 @@ const postsListSlice = createSlice({
             })
             .addCase(fetchBookmarkedPosts.fulfilled, (state, action) => {
                 state.isLoading = false;
-                state.bookmarkedPosts = action.payload.posts || [];
-                // If we want to show them in the main list, we can also set state.posts
-                // For a specific "My Bookmarks" page, we might want to use state.posts or state.bookmarkedPosts
-                // Let's assume the page will read from state.posts if we use a separate page logic,
-                // or we can just populate state.posts to reuse the list component.
-                // However, the interface has a specific `bookmarkedPosts` field.
-                // Let's populate state.posts so we can reuse generic list selectors/components if they rely on it,
-                // BUT wait, `bookmarkedPosts` exists in state.
-                // Let's settle on using state.posts for the current view to allow pagination etc using the same variables.
-                state.posts = action.payload.posts || [];
-                state.totalPosts = action.payload.totalPosts || 0;
-                state.currentPage = action.payload.currentPage || 1;
-                state.totalPages = action.payload.totalPages || 1;
-                state.hasMore = action.payload.hasMore || false;
+                // Handle various potential API response formats: 
+                // 1. { posts: [...] }
+                // 2. { data: [...] }
+                // 3. { content: [...] } (Spring/JPA)
+                // 4. [...] (Direct array)
+                const payload = action.payload;
+                const posts = payload?.posts || payload?.data || payload?.content || (Array.isArray(payload) ? payload : []);
+
+                const totalPosts = payload?.totalPosts || payload?.totalElements || posts.length;
+                const currentPage = payload?.currentPage || payload?.number + 1 || 1;
+                const totalPages = payload?.totalPages || 1;
+                const hasMore = payload?.hasMore || (currentPage < totalPages) || false;
+
+                state.bookmarkedPosts = posts;
+                state.posts = posts;
+                state.totalPosts = totalPosts;
+                state.currentPage = currentPage;
+                state.totalPages = totalPages;
+                state.hasMore = hasMore;
             })
             .addCase(fetchBookmarkedPosts.rejected, (state, action) => {
                 state.isLoading = false;
@@ -388,6 +497,7 @@ const postsListSlice = createSlice({
 
 export const {
     toggleLike,
+    toggleDislike,
     toggleBookmark,
     toggleSubscribe,
     incrementViews,
