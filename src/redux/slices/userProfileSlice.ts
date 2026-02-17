@@ -40,7 +40,7 @@ export const fetchUserDetails = createAsyncThunk(
     'userProfile/fetchDetails',
     async (userId: string, { rejectWithValue }) => {
         try {
-            const response = await api.get(`/user/details/?userId=${userId}`);
+            const response = await api.get(`/user/details/?bloggerId=${userId}`);
             if (response && response.data) {
                 return response.data as UserProfileData;
             }

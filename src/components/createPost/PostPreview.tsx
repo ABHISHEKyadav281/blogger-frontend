@@ -1,34 +1,10 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import { 
-  ArrowLeft, 
-  Save, 
   Eye, 
-  Send, 
-  Image, 
-  Video, 
-  Link, 
-  Bold, 
-  Italic, 
-  Underline,
-  List,
-  Hash,
-  Quote,
-  Code,
-  Smile,
-  Tag,
-  Calendar,
-  Clock,
-  Globe,
-  Lock,
-  Users,
-  AlertCircle,
-  X,
-  Upload,
-  FileText,
-  Settings,
-  Sparkles,
-  Trash2,
+  Tag, 
+  Calendar, 
+  Clock, 
 } from 'lucide-react';
 
 interface PostData {
@@ -52,14 +28,6 @@ interface Category {
   color: string;
 }
 
-interface MediaItem {
-  id: string;
-  url: string;
-  type: 'image' | 'video';
-  name: string;
-  size: number;
-}
-
 const categories: Category[] = [
   { id: '1', name: 'Anime Reviews', description: 'In-depth anime series and movie reviews', color: 'from-pink-500 to-red-500' },
   { id: '2', name: 'Manga Discussion', description: 'Manga analysis and discussions', color: 'from-blue-500 to-cyan-500' },
@@ -67,13 +35,6 @@ const categories: Category[] = [
   { id: '4', name: 'Industry News', description: 'Latest anime industry updates', color: 'from-green-500 to-emerald-500' },
   { id: '5', name: 'Studio Spotlights', description: 'Focusing on animation studios', color: 'from-yellow-500 to-orange-500' },
   { id: '6', name: 'Technical Analysis', description: 'Animation and production breakdowns', color: 'from-indigo-500 to-blue-600' }
-];
-
-const popularTags = [
-  'AttackOnTitan', 'OnePiece', 'DemonSlayer', 'JujutsuKaisen', 'MyHeroAcademia',
-  'Naruto', 'DragonBall', 'StudioGhibli', 'MAPPA', 'WITStudio', 'Toei',
-  'Shonen', 'Seinen', 'Shoujo', 'Isekai', 'Mecha', 'Romance', 'Action',
-  'Comedy', 'Drama', 'Thriller', 'Horror', 'Slice of Life'
 ];
 const PostPreview: React.FC<{ postData: PostData }> = ({ postData }) => {
   const formatContent = (content: string) => {
@@ -106,6 +67,13 @@ const PostPreview: React.FC<{ postData: PostData }> = ({ postData }) => {
       });
   };
 
+  // Function to strip HTML tags
+  const stripHtml = (html: string) => {
+    const tmp = document.createElement("DIV");
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || "";
+  };
+
   const selectedCategory = categories.find(cat => cat.id === postData.category);
 
   return (
@@ -134,7 +102,7 @@ const PostPreview: React.FC<{ postData: PostData }> = ({ postData }) => {
         {/* Excerpt */}
         {postData.excerpt && (
           <p className="text-xl text-gray-300 mb-6 leading-relaxed">
-            {postData.excerpt}
+            {stripHtml(postData.excerpt)}
           </p>
         )}
 

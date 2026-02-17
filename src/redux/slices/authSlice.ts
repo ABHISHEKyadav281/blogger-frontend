@@ -58,6 +58,9 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+    stopLoading: (state) => {
+      state.isLoading = false;
+    },
   },
 });
 
@@ -68,6 +71,7 @@ export const {
   logout,
   updateUser,
   clearError,
+  stopLoading,
 } = authSlice.actions;
 
 export default authSlice.reducer;

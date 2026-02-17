@@ -108,30 +108,26 @@ interface Activity {
 }
 
 // Sample Data
-const sampleUser: User = {
-  id: '1',
-  name: 'Alex Chen',
-  username: 'animemaster',
-  avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&h=120&fit=crop&crop=face',
-  coverImage: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&h=400&fit=crop',
-  bio: 'Passionate anime reviewer and manga enthusiast 🎌 Sharing my thoughts on the latest series and timeless classics. Always looking for hidden gems!',
-  location: 'Tokyo, Japan',
-  website: 'https://animemaster.blog',
-  joinDate: 'January 2023',
-  email: 'alex@animemaster.blog',
-  isVerified: true,
-  role: 'verified',
+const emptyUser: User = {
+  id: '',
+  name: '',
+  username: '',
+  avatar: '',
+  coverImage: '',
+  bio: '',
+  location: '',
+  website: '',
+  joinDate: '',
+  email: '',
+  isVerified: false,
+  role: 'user',
   stats: {
-    posts: 156,
-    followers: 1247,
-    following: 89,
-    likes: 5432
+    posts: 0,
+    followers: 0,
+    following: 0,
+    likes: 0
   },
-  socialLinks: {
-    twitter: 'https://twitter.com/animemaster',
-    instagram: 'https://instagram.com/animemaster',
-    github: 'https://github.com/animemaster'
-  },
+  socialLinks: {},
   preferences: {
     showEmail: false,
     allowMessages: true,
@@ -141,89 +137,12 @@ const sampleUser: User = {
   isBlocked: false
 };
 
-const samplePosts: Post[] = [
-  {
-    id: '1',
-    title: 'The Evolution of Studio Ghibli: From Nausicaä to Earwig',
-    excerpt: 'A comprehensive look at how Studio Ghibli\'s animation style and storytelling has evolved over four decades...',
-    content: 'Full content here...',
-    coverImage: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=200&fit=crop',
-    category: 'Studio Analysis',
-    tags: ['StudioGhibli', 'Animation', 'History'],
-    publishDate: 'March 15, 2024',
-    readTime: '8 min read',
-    stats: {
-      likes: 234,
-      comments: 45,
-      views: 1205,
-      isLiked: true,
-      isBookmarked: false
-    },
-    status: 'published'
-  },
-  {
-    id: '2',
-    title: 'Top 10 Underrated Anime of 2024 You Need to Watch',
-    excerpt: 'Hidden gems that deserve more attention this year, from psychological thrillers to slice-of-life masterpieces...',
-    content: 'Full content here...',
-    coverImage: 'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=400&h=200&fit=crop',
-    category: 'Reviews',
-    tags: ['2024', 'Recommendations', 'Hidden Gems'],
-    publishDate: 'March 10, 2024',
-    readTime: '12 min read',
-    stats: {
-      likes: 567,
-      comments: 89,
-      views: 2340,
-      isLiked: false,
-      isBookmarked: true
-    },
-    status: 'published'
-  },
-  {
-    id: '3',
-    title: 'Character Analysis: The Psychology of Senku Ishigami',
-    excerpt: 'Exploring the brilliant mind behind Dr. Stone\'s protagonist and what makes him such a compelling character...',
-    content: 'Full content here...',
-    coverImage: 'https://images.unsplash.com/photo-1542831371-29b0f74f9713?w=400&h=200&fit=crop',
-    category: 'Character Study',
-    tags: ['DrStone', 'Psychology', 'Analysis'],
-    publishDate: 'March 5, 2024',
-    readTime: '6 min read',
-    stats: {
-      likes: 123,
-      comments: 34,
-      views: 890,
-      isLiked: false,
-      isBookmarked: false
-    },
-    status: 'published'
-  }
-];
-
-const sampleActivity: Activity[] = [
-  {
-    id: '1',
-    type: 'post',
-    content: 'Published "The Evolution of Studio Ghibli"',
-    timestamp: '2 hours ago',
-    target: 'post-1'
-  },
-  {
-    id: '2',
-    type: 'like',
-    content: 'Liked "Attack on Titan Final Season Review"',
-    timestamp: '5 hours ago',
-    target: 'post-2'
-  },
-  {
-    id: '3',
-    type: 'follow',
-    content: 'Started following @mangareader123',
-    timestamp: '1 day ago',
-    target: 'user-123'
-  }
-];
+// Utility to strip HTML tags
+const stripHtml = (html: string) => {
+  const tmp = document.createElement("DIV");
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || "";
+};
 
 // Post Card Component
 const PostCard: React.FC<{ 
@@ -689,10 +608,10 @@ const EditProfileModal: React.FC<{
 
 // Main Profile Component
 const UserProfilePage: React.FC = () => {
-  const [user, setUser] = useState(sampleUser);
-  const [posts, setPosts] = useState(samplePosts);
+  const [user, setUser] = useState<User>(emptyUser);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [isSubscribed, setIsSubscribed] = useState(false);
-  const [activity] = useState(sampleActivity);
+  const [activity] = useState<Activity[]>([]);
   const [activeTab, setActiveTab] = useState<'posts' | 'activity' | 'about'>('posts');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showEditModal, setShowEditModal] = useState(false);
@@ -714,8 +633,8 @@ const UserProfilePage: React.FC = () => {
   } = useAppSelector((state) => state.userProfile);
   const { user: authUser } = useAppSelector((state) => state.auth);
 
-  const userId = urlUserId || authUser?.id;
-  const isOwnProfile = !urlUserId || urlUserId === authUser?.id;
+  const userId = urlUserId || authUser?.id?.toString();
+  const isOwnProfile = !urlUserId || (authUser?.id && urlUserId.toString() === authUser.id.toString());
 
   useEffect(() => {
     if (userId) {
@@ -786,7 +705,11 @@ const UserProfilePage: React.FC = () => {
         return {
           id: p.id ? p.id.toString() : '',
           title: p.title || 'Untitled Post',
-          excerpt: p.content ? p.content.substring(0, 160) + '...' : 'No content available',
+          excerpt: p.excerpt 
+            ? stripHtml(p.excerpt).substring(0, 160) + '...'
+            : p.content 
+              ? stripHtml(p.content).substring(0, 160) + '...' 
+              : 'No content available',
           content: p.content || '',
           coverImage: resolvedCoverImage,
           category: p.category || 'General',
@@ -1012,7 +935,7 @@ const UserProfilePage: React.FC = () => {
                     alt={user.name}
                     className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-white/20 bg-black/50"
                   />
-                  {user.role && (
+                  {user.role && getRoleIcon(user.role) && (
                     <div className="absolute -bottom-2 -right-2 bg-gray-900 rounded-full p-2">
                       {getRoleIcon(user.role)}
                     </div>
