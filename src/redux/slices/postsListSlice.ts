@@ -67,11 +67,12 @@ export const fetchPosts = createAsyncThunk(
 
             const response = await api.get('/post/v1/allposts', { params });
             console.log('📡 Full API Response:', response);
+            const resAny = response as any;
             console.log('📡 Response Keys:', Object.keys(response));
-            console.log('📡 Response.data:', response.data);
-            console.log('📡 Response.content:', response.content);
-            console.log('📡 Response.posts:', response.posts);
-            return response;
+            console.log('📡 Response.data:', resAny.data);
+            console.log('📡 Response.content:', resAny.content);
+            console.log('📡 Response.posts:', resAny.posts);
+            return response as any;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message || 'Failed to fetch posts');
         }
@@ -328,12 +329,13 @@ const postsListSlice = createSlice({
                 state.isLoading = false;
                 const payload = action.payload;
 
+                const payloadAny = payload as any;
                 // Robust mapping for posts
-                const posts = payload?.posts || payload?.data || payload?.content || (Array.isArray(payload) ? payload : []);
-                const totalPosts = payload?.totalPosts || payload?.totalElements || 0;
-                const currentPage = payload?.currentPage || payload?.number + 1 || 1;
-                const totalPages = payload?.totalPages || 1;
-                const hasMore = payload?.hasMore || (currentPage < totalPages) || false;
+                const posts = payloadAny?.posts || payloadAny?.data || payloadAny?.content || (Array.isArray(payloadAny) ? payloadAny : []);
+                const totalPosts = payloadAny?.totalPosts || payloadAny?.totalElements || 0;
+                const currentPage = payloadAny?.currentPage || payloadAny?.number + 1 || 1;
+                const totalPages = payloadAny?.totalPages || 1;
+                const hasMore = payloadAny?.hasMore || (currentPage < totalPages) || false;
 
                 if (currentPage === 1) {
                     state.posts = posts;

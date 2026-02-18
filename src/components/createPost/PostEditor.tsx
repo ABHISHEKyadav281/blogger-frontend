@@ -75,7 +75,12 @@ const popularTags = [
   'Comedy', 'Drama', 'Thriller', 'Horror', 'Slice of Life'
 ];
 
-const PostEditor = ({ postData, setPostData }) => {
+interface PostEditorProps {
+  postData: PostData;
+  setPostData: React.Dispatch<React.SetStateAction<PostData>>;
+}
+
+const PostEditor: React.FC<PostEditorProps> = ({ postData, setPostData }) => {
   return (
     <textarea
       value={postData.content}
