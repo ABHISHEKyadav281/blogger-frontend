@@ -68,8 +68,8 @@ const searchSlice = createSlice({
             const postId = action.payload;
             const updatePostLike = (post: BlogPost) => {
                 if (post.id === postId) {
-                    post.stats.isLiked = !post.stats.isLiked;
-                    post.stats.likes += post.stats.isLiked ? 1 : -1;
+                    post.isLiked = !post.isLiked;
+                    post.stats.likes += post.isLiked ? 1 : -1;
                 }
             };
             state.searchResults.forEach(updatePostLike);
@@ -79,7 +79,7 @@ const searchSlice = createSlice({
             const postId = action.payload;
             const updatePostBookmark = (post: BlogPost) => {
                 if (post.id === postId) {
-                    post.stats.isBookmarked = !post.stats.isBookmarked;
+                    post.isBookmarked = !post.isBookmarked;
                 }
             };
             state.searchResults.forEach(updatePostBookmark);
@@ -124,7 +124,7 @@ const searchSlice = createSlice({
             const { postId, isLiked, likesCount } = action.payload;
             const updatePostFromAPI = (post: BlogPost) => {
                 if (post.id === postId) {
-                    post.stats.isLiked = isLiked;
+                    post.isLiked = isLiked;
                     post.stats.likes = likesCount;
                 }
             };

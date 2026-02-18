@@ -149,11 +149,11 @@ const CommentItem: React.FC<{
   const getRoleIcon = (role?: string) => {
     switch (role) {
       case 'admin':
-        return <Award className="w-4 h-4 text-yellow-400" title="Admin" />;
+        return <Award className="w-4 h-4 text-yellow-400" aria-label="Admin" />;
       case 'moderator':
-        return <Award className="w-4 h-4 text-blue-400" title="Moderator" />;
+        return <Award className="w-4 h-4 text-blue-400" aria-label="Moderator" />;
       case 'verified':
-        return <Check className="w-4 h-4 text-green-400" title="Verified" />;
+        return <Check className="w-4 h-4 text-green-400" aria-label="Verified" />;
       default:
         return null;
     }

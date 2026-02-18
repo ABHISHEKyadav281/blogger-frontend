@@ -44,7 +44,7 @@ const BlogPostDetail: React.FC = () => {
   console.log(bloggerId);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const followerCount = useAppSelector((state) =>
-    selectFollowerCount(state, bloggerId)
+    bloggerId ? selectFollowerCount(state, bloggerId) : 0
   );
 
   // Fetch post on mount
@@ -308,13 +308,12 @@ const BlogPostDetail: React.FC = () => {
             <img
               src={
                 post.author?.avatar ||
-                post.user?.avatar ||
                 "https://via.placeholder.com/150"
               }
-              alt={post.author?.name || post.user?.name || "Author"}
+              alt={post.author?.name || "Author"}
               className="w-14 h-14 rounded-full border-2 border-white/20 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
               onClick={() => {
-                const id = post.author?.id || post.user?.id;
+                const id = post.author?.id;
                 if (id) navigate(`/profile/${id}`);
               }}
             />
@@ -322,13 +321,11 @@ const BlogPostDetail: React.FC = () => {
               <h3 
                 className="font-semibold text-white text-lg cursor-pointer hover:text-primary transition-colors"
                 onClick={() => {
-                  const id = post.author?.id || post.user?.id;
+                  const id = post.author?.id;
                   if (id) navigate(`/profile/${id}`);
                 }}
               >
-                {post.author?.username ||
-                  post.user?.username ||
-                  "Unknown Author"}
+                {post.author?.username || "Unknown Author"}
               </h3>
               <p className="text-gray-400 text-sm">
                 {/* ✅ Use followerCount from subscription slice */}

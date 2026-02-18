@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk,type PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
 import api from '../../utils/api';
 
 // Types
@@ -69,7 +69,7 @@ export const subscribeToUser = createAsyncThunk(
             return {
                 bloggerId,
                 isSubscribed: true,
-                followerCount: response.followerCount || 0,
+                followerCount: (response as any).followerCount || 0,
             };
         } catch (error: any) {
             return rejectWithValue(
@@ -89,7 +89,7 @@ export const unsubscribeFromUser = createAsyncThunk(
             return {
                 bloggerId,
                 isSubscribed: false,
-                followerCount: response.followerCount || 0,
+                followerCount: (response as any).followerCount || 0,
             };
         } catch (error: any) {
             return rejectWithValue(
@@ -106,7 +106,7 @@ export const toggleSubscription = createAsyncThunk(
         try {
             const state = getState() as { subscriptions: SubscriptionState };
             const isCurrentlySubscribed = state.subscriptions.subscribedBloggers.has(bloggerId);
-            console.log("isCurrentlySubscribed",isCurrentlySubscribed);
+            console.log("isCurrentlySubscribed", isCurrentlySubscribed);
             if (isCurrentlySubscribed) {
                 return await dispatch(unsubscribeFromUser(bloggerId)).unwrap();
             } else {
@@ -131,7 +131,7 @@ export const fetchSubscriptions = createAsyncThunk(
             const response = await api.get<{ bloggerIds: string[] }>(
                 '/user/action/subscriptions'
             );
-            return response.bloggerIds;
+            return (response as any).bloggerIds;
         } catch (error: any) {
             return rejectWithValue(
                 error.response?.data?.message || 'Failed to fetch subscriptions'
@@ -153,7 +153,7 @@ export const fetchFollowerCount = createAsyncThunk(
             );
             return {
                 bloggerId,
-                count: response.count,
+                count: (response as any).count,
             };
         } catch (error: any) {
             return rejectWithValue(
@@ -178,12 +178,12 @@ const userSubscriptionsSlice = createSlice({
                 state.subscribedBloggers.delete(action.payload.bloggerId);
             }
         },
-        
+
         // Clear error
         clearError: (state) => {
             state.error = null;
         },
-        
+
         // Reset state (on logout)
         resetSubscriptions: (state) => {
             state.subscribedBloggers = new Set();
@@ -255,13 +255,13 @@ const userSubscriptionsSlice = createSlice({
             .addCase(toggleSubscription.fulfilled, (state, action) => {
                 state.isLoading = false;
                 const { bloggerId, isSubscribed, followerCount } = action.payload;
-                
+
                 if (isSubscribed) {
                     state.subscribedBloggers.add(bloggerId);
                 } else {
                     state.subscribedBloggers.delete(bloggerId);
                 }
-                
+
                 state.subscriptionCounts[bloggerId] = followerCount;
             })
             .addCase(toggleSubscription.rejected, (state, action) => {

@@ -808,11 +808,11 @@ const UserProfilePage: React.FC = () => {
   const getRoleIcon = (role: string) => {
     switch (role) {
       case 'admin':
-        return <Award className="w-5 h-5 text-yellow-400" title="Admin" />;
+        return <Award className="w-5 h-5 text-yellow-400" aria-label="Admin" />;
       case 'moderator':
-        return <Award className="w-5 h-5 text-blue-400" title="Moderator" />;
+        return <Award className="w-5 h-5 text-blue-400" aria-label="Moderator" />;
       case 'verified':
-        return <Check className="w-5 h-5 text-green-400" title="Verified" />;
+        return <Check className="w-5 h-5 text-green-400" aria-label="Verified" />;
       default:
         return null;
     }
