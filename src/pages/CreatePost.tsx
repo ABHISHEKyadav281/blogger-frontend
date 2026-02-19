@@ -4,6 +4,7 @@ import {
   AlertCircle, X, FileText, Settings, Sparkles, Upload
 } from 'lucide-react';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 import RichTextEditor from '../components/createPost/RichTextEditor';
 import PostPreview from '../components/createPost/PostPreview';
 
@@ -162,7 +163,7 @@ const CreatePost: React.FC = () => {
 
       // Send request
       const response = await axios.post(
-        'http://localhost:8080/post/v1/createPost',
+        `${API_BASE_URL}/post/v1/createPost`,
         formData,
         {
           headers: {

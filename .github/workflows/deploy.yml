@@ -23,6 +23,8 @@ jobs:
         run: npm ci  # Faster and more reliable than npm install
       
       - name: Build project
+        env:
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
         run: npm run build
       
       - name: Configure AWS credentials

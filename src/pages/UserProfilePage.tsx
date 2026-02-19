@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../redux/slices/hooks';
 import { fetchUserDetails, fetchUserPosts } from '../redux/slices/userProfileSlice';
 import api from '../utils/api';
+import { API_BASE_URL } from '../config';
 import { 
   ArrowLeft, 
   Edit3, 
@@ -695,11 +696,11 @@ const UserProfilePage: React.FC = () => {
         } else if (p.coverImage) {
           resolvedCoverImage = p.coverImage.startsWith('http') 
             ? p.coverImage 
-            : `http://localhost:8080${p.coverImage.startsWith('/') ? '' : '/'}${p.coverImage}`;
+            : `${API_BASE_URL}${p.coverImage.startsWith('/') ? '' : '/'}${p.coverImage}`;
         } else if (p.mediaUrl) {
           resolvedCoverImage = p.mediaUrl.startsWith('http') 
             ? p.mediaUrl 
-            : `http://localhost:8080${p.mediaUrl.startsWith('/') ? '' : '/'}${p.mediaUrl}`;
+            : `${API_BASE_URL}${p.mediaUrl.startsWith('/') ? '' : '/'}${p.mediaUrl}`;
         }
 
         return {
