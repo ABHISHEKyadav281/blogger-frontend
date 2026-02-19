@@ -8,6 +8,7 @@ import {
 import { useAppDispatch } from '../../redux/slices/hooks';
 
 import { toggleSubscribe } from '../../redux/slices/postsListSlice';
+import { API_BASE_URL } from '../../config';
 import type { BlogPost } from '../../types';
 
 interface BlogPreviewCardProps {
@@ -53,7 +54,7 @@ const BlogPreviewCard: React.FC<BlogPreviewCardProps> = ({ post }) => {
         if (post.coverImage.startsWith('http')) return post.coverImage;
         // If relative path, prepend backend URL? Or maybe it's base64 without prefix?
         // Let's assume it might be relative path served by backend static files
-        return `http://localhost:8080${post.coverImage.startsWith('/') ? '' : '/'}${post.coverImage}`;
+        return `${API_BASE_URL}${post.coverImage.startsWith('/') ? '' : '/'}${post.coverImage}`;
     }
     
     return "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&h=600&fit=crop";
