@@ -16,12 +16,16 @@ import {
   fetchPostById,
   clearDetailError,
   fetchPostLikeCount,
+  addComment,
+  fetchComments,
+  fetchReplies,
 } from "../../redux/slices/postDetailSlice";
 import { toggleLike, toggleBookmark, likePost, bookmarkPost } from "../../redux/slices/postsListSlice";
 import {
   selectFollowerCount,
 } from "../../redux/slices/userSubscriptionsSlice";
 import api from "../../utils/api";
+import Comments from "../comments/Comments";
 
 const BlogPostDetail: React.FC = () => {
   const { postId } = useParams<{ postId: string }>();
@@ -30,9 +34,13 @@ const BlogPostDetail: React.FC = () => {
 
   const {
     currentPost: post,
+    comments,
     isLoading,
     error,
   } = useAppSelector((state) => state.postDetail);
+
+  const { user: currentUser } = useAppSelector((state) => state.auth);
+  const [showComments, setShowComments] = useState(false);
 
   // Debug: Log when likesCount changes
   useEffect(() => {
@@ -41,22 +49,21 @@ const BlogPostDetail: React.FC = () => {
 
   // ✅ Get subscription status from new slice
   const bloggerId = post?.author?.id;
-  console.log(bloggerId);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const followerCount = useAppSelector((state) =>
     bloggerId ? selectFollowerCount(state, bloggerId) : 0
   );
 
-  // Fetch post on mount
+  // Fetch post and comments on mount
   useEffect(() => {
     if (postId) {
-      console.log("Fetching post details for:", postId);
-      // Fetch post first, then fetch like count after it completes
+      console.log("Fetching post details and comments for:", postId);
       dispatch(fetchPostById(postId))
         .unwrap()
         .then(() => {
-          console.log("Post loaded, now fetching like count");
+          console.log("Post loaded, now fetching like count and comments");
           dispatch(fetchPostLikeCount(postId));
+          dispatch(fetchComments(postId));
         })
         .catch((err) => console.error("Failed to fetch post:", err));
     }
@@ -66,12 +73,17 @@ const BlogPostDetail: React.FC = () => {
   }, [postId, dispatch]);
   
   // ✅ Check subscription status after post loads
-  const fetchIsSubsc=(async()=>{
-    console.log(post)
-      const resp = await api.get(`/user/action/is-subscribed?bloggerId=${post?.author?.id}`);
-      setIsSubscribed(resp?.data);
-      console.log("--------------------------- ",resp);
-  })
+  const fetchIsSubsc = async () => {
+    if (post?.author?.id) {
+      try {
+        const resp = await api.get(`/user/action/is-subscribed?bloggerId=${post.author.id}`);
+        setIsSubscribed(resp?.data);
+      } catch (err) {
+        console.error("Failed to fetch subscription status:", err);
+      }
+    }
+  };
+
   useEffect(() => {
     fetchIsSubsc();
   }, [post]);
@@ -125,7 +137,6 @@ const BlogPostDetail: React.FC = () => {
         return <br key={index} />;
       }
 
-      // Handle inline formatting
       let formatted = line
         .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
         .replace(/\*(.*?)\*/g, "<em>$1</em>")
@@ -147,17 +158,14 @@ const BlogPostDetail: React.FC = () => {
 
   const handleLike = () => {
     if (post) {
-        // Optimistic update
-        dispatch(toggleLike(post.id));
-        // API call
-        dispatch(likePost({ postId: post.id, isLiked: post.isLiked }))
-            .unwrap()
-            .then(res => console.log("Like success:", res))
-            .catch(err => {
-                console.error("Like failed:", err);
-                // Revert on error
-                dispatch(toggleLike(post.id));
-            });
+      dispatch(toggleLike(post.id));
+      dispatch(likePost({ postId: post.id, isLiked: post.isLiked }))
+        .unwrap()
+        .then(res => console.log("Like success:", res))
+        .catch(err => {
+          console.error("Like failed:", err);
+          dispatch(toggleLike(post.id));
+        });
     }
   };
 
@@ -165,17 +173,15 @@ const BlogPostDetail: React.FC = () => {
     if (post) {
       dispatch(toggleBookmark(post.id));
       dispatch(bookmarkPost({ postId: post.id, isBookmarked: !!post.isBookmarked }))
-          .unwrap()
-          .then(res => console.log("Bookmark success:", res))
-          .catch(err => {
-              console.error("Bookmark failed:", err);
-              // Revert if failed
-              dispatch(toggleBookmark(post.id));
-          });
+        .unwrap()
+        .then(res => console.log("Bookmark success:", res))
+        .catch(err => {
+          console.error("Bookmark failed:", err);
+          dispatch(toggleBookmark(post.id));
+        });
     }
   };
 
-  // ✅ Updated subscribe handler
   const handleSubscribe = async () => {
     if (bloggerId) {
       if (!isSubscribed) {
@@ -211,7 +217,38 @@ const BlogPostDetail: React.FC = () => {
     }
   };
 
-  // Loading state
+  const handleAddComment = (content: string, parentId?: string) => {
+    if (postId && currentUser) {
+      // Use the unified addComment thunk for both top-level and replies
+      dispatch(addComment({ 
+        postId, 
+        content, 
+        userId: currentUser.id.toString(),
+        author: {
+          id: currentUser.id.toString(),
+          name: currentUser.username,
+          username: currentUser.username,
+          avatar: currentUser.avatar || 'https://via.placeholder.com/40'
+        },
+        parentId: parentId || null
+      }))
+      .unwrap()
+      .then(() => {
+        console.log(parentId ? "Reply added successfully" : "Comment added successfully");
+      })
+      .catch((err) => {
+        console.error("Failed to add interaction:", err);
+      });
+    } else if (!currentUser) {
+      alert("Please login to comment");
+      navigate("/auth");
+    }
+  };
+
+  const handleFetchReplies = (parentId: string) => {
+    dispatch(fetchReplies(parentId));
+  };
+
   if (isLoading && !post) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background text-white">
@@ -220,7 +257,6 @@ const BlogPostDetail: React.FC = () => {
     );
   }
 
-  // Error or missing post
   if (error) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background text-white p-4">
@@ -246,16 +282,14 @@ const BlogPostDetail: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background text-white relative z-10 pt-6 pb-24 lg:pb-6">
-      {/* Background effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-pulse" />
         <div
-          className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse"
+          className="absolute -bottom-40 -left-40 w-80 h-80 bg-white/5 rounded-full blur-3xl animate-pulse"
           style={{ animationDelay: "1s" }}
         />
       </div>
 
-      {/* Back button */}
       <button
         onClick={() => navigate(-1)}
         className="flex items-center space-x-2 text-gray-400 hover:text-white ml-4 transition-all duration-300 hover:transform hover:translate-x-1"
@@ -264,9 +298,7 @@ const BlogPostDetail: React.FC = () => {
         <span>Back to posts</span>
       </button>
 
-      {/* Main article */}
       <article className="max-w-4xl mx-auto glass-panel rounded-2xl md:rounded-3xl border border-white/20 overflow-hidden mt-4 md:mt-6 p-4 md:p-6 lg:mx-auto mx-4">
-        {/* Hero image */}
         <div className="relative h-64 md:h-96 overflow-hidden rounded-t-3xl">
           <img
             src={getImageSource()}
@@ -302,14 +334,10 @@ const BlogPostDetail: React.FC = () => {
           </div>
         </div>
 
-        {/* Author and subscribe */}
         <div className="flex items-center justify-between py-4 border-b border-white/10 mt-4">
           <div className="flex items-center space-x-4">
             <img
-              src={
-                post.author?.avatar ||
-                "https://via.placeholder.com/150"
-              }
+              src={post.author?.avatar || "https://via.placeholder.com/150"}
               alt={post.author?.name || "Author"}
               className="w-14 h-14 rounded-full border-2 border-white/20 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
               onClick={() => {
@@ -328,7 +356,6 @@ const BlogPostDetail: React.FC = () => {
                 {post.author?.username || "Unknown Author"}
               </h3>
               <p className="text-gray-400 text-sm">
-                {/* ✅ Use followerCount from subscription slice */}
                 {followerCount > 0
                   ? followerCount.toLocaleString()
                   : (post.author?.stats?.followers || 0).toLocaleString()}{" "}
@@ -339,7 +366,6 @@ const BlogPostDetail: React.FC = () => {
               )}
             </div>
           </div>
-          {/* ✅ Updated subscribe button */}
           <button
             onClick={handleSubscribe}
             disabled={!bloggerId}
@@ -353,7 +379,6 @@ const BlogPostDetail: React.FC = () => {
           </button>
         </div>
 
-        {/* Content */}
         <div className="prose prose-invert max-w-none my-6 text-gray-300">
           {post.content ? (
             formatContent(post.content)
@@ -362,7 +387,6 @@ const BlogPostDetail: React.FC = () => {
           )}
         </div>
 
-        {/* Tags */}
         {post.tags && post.tags.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-4">
             {post.tags.map((tag, i) => (
@@ -377,28 +401,32 @@ const BlogPostDetail: React.FC = () => {
           </div>
         )}
 
-        {/* Action bar */}
         <div className="flex items-center justify-between py-4 border-t border-b border-white/10">
           <div className="flex items-center space-x-4">
             <button
               onClick={handleLike}
               className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-all duration-300 ${
                 post.isLiked
-                  ? "text-red-400 bg-red-500/20 hover:bg-red-500/30"
-                  : "text-gray-400 hover:text-red-400 hover:bg-red-500/10"
+                  ? "text-primary bg-primary/20 hover:bg-primary/30"
+                  : "text-gray-400 hover:text-primary hover:bg-primary/10"
               }`}
             >
-              <Heart
-                className={`w-5 h-5 ${
-                  post.isLiked ? "fill-current" : ""
-                }`}
-              />
+              <Heart className={`w-5 h-5 ${post.isLiked ? "fill-current" : ""}`} />
               <span>{post.likesCount || 0}</span>
             </button>
-            <div className="flex items-center space-x-2 px-4 py-2 text-gray-400">
-              <MessageCircle className="w-5 h-5" />
+            
+            <button
+              onClick={() => setShowComments(!showComments)}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-all duration-300 ${
+                showComments
+                  ? "text-primary bg-primary/20 hover:bg-primary/30 border border-primary/20"
+                  : "text-gray-400 hover:text-primary hover:bg-primary/10"
+              }`}
+            >
+              <MessageCircle className={`w-5 h-5 ${showComments ? "fill-current" : ""}`} />
               <span>{post.commentsCount || 0}</span>
-            </div>
+            </button>
+
             <button
               onClick={() => handleShare("copy")}
               className="flex items-center space-x-2 px-4 py-2 rounded-full text-gray-400 hover:text-green-400 hover:bg-green-500/10 transition-all duration-300"
@@ -415,13 +443,31 @@ const BlogPostDetail: React.FC = () => {
                 : "text-gray-400 hover:text-yellow-400 hover:bg-yellow-500/10"
             }`}
           >
-            <Bookmark
-              className={`w-5 h-5 ${
-                post.isBookmarked ? "fill-current" : ""
-              }`}
-            />
+            <Bookmark className={`w-5 h-5 ${post.isBookmarked ? "fill-current" : ""}`} />
           </button>
         </div>
+
+        {showComments && (
+          <div className="mt-8 transition-all duration-500 animate-in fade-in slide-in-from-top-4">
+            <Comments
+              postId={postId || ""}
+              currentUser={{
+                id: currentUser?.id?.toString() || "guest",
+                name: currentUser?.username || "Guest",
+                username: currentUser?.username || "guest",
+                avatar: currentUser?.avatar || "https://via.placeholder.com/40",
+                role: currentUser?.role
+              }}
+              comments={comments} 
+              onAddComment={handleAddComment}
+              onEditComment={() => {}}
+              onDeleteComment={() => {}}
+              onLikeComment={() => {}}
+              onDislikeComment={() => {}}
+              onFetchReplies={handleFetchReplies}
+            />
+          </div>
+        )}
       </article>
     </div>
   );
