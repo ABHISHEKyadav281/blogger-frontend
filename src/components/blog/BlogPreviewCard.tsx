@@ -10,9 +10,9 @@ import { useState } from 'react';
 import ShareModal from './ShareModal';
 import { useAppDispatch } from '../../redux/slices/hooks';
 
-import { toggleSubscribe } from '../../redux/slices/postsListSlice';
 import { API_BASE_URL } from '../../config';
 import type { BlogPost } from '../../types';
+import { formatTimeAgo } from '../../utils/dateUtils';
 
 interface BlogPreviewCardProps {
   post: BlogPost;
@@ -134,27 +134,14 @@ const BlogPreviewCard: React.FC<BlogPreviewCardProps> = ({ post }) => {
               </p> {/* Gap user name and post time */}
               <div className="flex items-center space-x-2 text-sm text-gray-400">
                 <Calendar className="w-4 h-4" />
-                <span>{post.publishDate}</span>
+                <span>{formatTimeAgo(post.publishDate)}</span>
                 <span>•</span>
                 <Clock className="w-4 h-4" />
                 <span>{post.readTime}</span>
               </div>
             </div>
           </div>
-          <div className="flex flex-col items-end space-y-2">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                dispatch(toggleSubscribe(post.id));
-              }}
-              className={`px-4 py-2 rounded-full font-medium transition-all duration-300 text-sm ${
-                post.author?.isSubscribed
-                  ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                  : 'bg-primary text-white hover:bg-rose-700 hover:shadow-lg'
-              }`}
-            >
-              {post.author?.isSubscribed ? 'Subscribed' : 'Subscribe'}
-            </button>
+          <div className="flex flex-col items-end justify-center">
             <div className="flex items-center space-x-1 text-gray-400">
               <span className="text-xs font-medium">{post.stats?.views}</span>
               <Eye className="w-4 h-4" />
