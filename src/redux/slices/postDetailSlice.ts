@@ -13,12 +13,14 @@ import {
 
 interface PostDetailState {
     currentPost: BlogPost | null;
+    comments: any[]; // We can refine this type later
     isLoading: boolean;
     error: string | null;
 }
 
 const initialState: PostDetailState = {
     currentPost: null,
+    comments: [],
     isLoading: false,
     error: null,
 };
@@ -28,13 +30,61 @@ export const fetchPostById = createAsyncThunk(
     async (postId: string, { rejectWithValue }) => {
         try {
             const response = await api.get(`/post/v1/posts/${postId}`);
-            // api.ts interceptor already returns response.data (the actual data), but TS thinks it's AxiosResponse
             return response as unknown as BlogPost;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message || 'Failed to fetch post');
         }
     }
 );
+
+export const addComment = createAsyncThunk(
+    'postDetail/addComment',
+    async ({ postId, content, userId, author, parentId = null }: { postId: string, content: string, userId: string, author: any, parentId?: string | null }, { rejectWithValue }) => {
+        try {
+            // Updated to match CommentDto: { content, postId, parentId }
+            // parentId is passed as-is (null for top-level, ID for replies)
+            const response = await api.post('comment/v1/addComment', {
+                postId: Number(postId),
+                content: content,
+                parentId: parentId ? Number(parentId) : null
+            }, {
+                headers: {
+                    'userId': userId
+                }
+            }) as any;
+            return response;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.message || 'Failed to add comment');
+        }
+    }
+);
+
+export const fetchComments = createAsyncThunk(
+    'postDetail/fetchComments',
+    async (postId: string, { rejectWithValue }) => {
+        try {
+            // Updated to follow the new API: @GetMapping(value = "/getComments")
+            const response = await api.get(`/comment/v1/getComments?postId=${postId}`);
+            return response as unknown as any[];
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.message || 'Failed to fetch comments');
+        }
+    }
+);
+
+export const fetchReplies = createAsyncThunk(
+    'postDetail/fetchReplies',
+    async (parentId: string, { rejectWithValue }) => {
+        try {
+            // Added for: @GetMapping(value = "/getComments/replies")
+            const response = await api.get(`/comment/v1/getComments/replies?parentId=${parentId}`);
+            return { parentId, replies: response as unknown as any[] };
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.message || 'Failed to fetch replies');
+        }
+    }
+);
+
 
 export const fetchPostLikeCount = createAsyncThunk(
     'postDetail/fetchPostLikeCount',
@@ -139,6 +189,151 @@ const postDetailSlice = createSlice({
                 state.currentPost.likesCount = action.payload.likesCount;
             }
         });
+
+        builder.addCase(addComment.fulfilled, (state, action) => {
+            if (state.currentPost) {
+                state.currentPost.commentsCount += 1;
+                if (state.currentPost.stats) {
+                    state.currentPost.stats.comments += 1;
+                }
+
+                console.log('addComment.fulfilled payload:', action.payload);
+                const { parentId, content, userId, author } = action.meta.arg;
+
+                // Create the comment/reply object
+                let newComment = action.payload;
+                const isFullComment = newComment && typeof newComment === 'object' && 'content' in newComment;
+
+                if (!isFullComment) {
+                    console.log('Payload is not a full comment, creating optimistic entry');
+                    newComment = {
+                        id: `temp-${Date.now()}`,
+                        content,
+                        parentId,
+                        timestamp: new Date().toISOString(),
+                        likes: 0,
+                        dislikes: 0,
+                        isLiked: false,
+                        isDisliked: false,
+                        replyCount: 0,
+                        author: author || {
+                            id: userId,
+                            name: 'You',
+                            username: 'current_user',
+                            avatar: 'https://via.placeholder.com/40'
+                        }
+                    };
+                } else {
+                    // Map the backend payload fields
+                    newComment = {
+                        ...newComment,
+                        id: String(newComment.id),
+                        timestamp: newComment.createdAt || newComment.timestamp,
+                        author: (newComment.author || author) ? {
+                            ...(newComment.author || author),
+                            name: ((newComment.author || author)?.name && (newComment.author || author).name !== 'Unknown' && !(newComment.author || author).name.startsWith('User '))
+                                ? (newComment.author || author).name
+                                : ((newComment.author || author)?.username || `user_${newComment.userId}`)
+                        } : {
+                            id: String(newComment.userId),
+                            name: `user_${newComment.userId}`,
+                            username: `user_${newComment.userId}`,
+                            avatar: 'https://via.placeholder.com/40'
+                        },
+                        likes: 0,
+                        dislikes: 0,
+                        isLiked: false,
+                        isDisliked: false,
+                        replyCount: newComment.replyCount || 0
+                    };
+                }
+
+                if (parentId) {
+                    // It's a reply - find parent and add it
+                    const parentIdStr = String(parentId);
+                    const parentComment = state.comments.find(c => String(c.id) === parentIdStr);
+                    if (parentComment) {
+                        if (!parentComment.replies) parentComment.replies = [];
+                        parentComment.replies.push(newComment);
+                        parentComment.replyCount = (parentComment.replyCount || 0) + 1;
+                    }
+                } else {
+                    // It's a top-level comment
+                    state.comments.unshift(newComment);
+                }
+            }
+        });
+
+        builder.addCase(fetchComments.fulfilled, (state, action) => {
+            const rawComments = Array.isArray(action.payload) ? action.payload : [];
+            state.comments = rawComments.map((c: any) => ({
+                ...c,
+                id: String(c.id),
+                timestamp: c.createdAt || c.timestamp,
+                author: c.author ? {
+                    ...c.author,
+                    name: (c.author.name && c.author.name !== 'Unknown' && !c.author.name.startsWith('User '))
+                        ? c.author.name
+                        : (c.author.username || `user_${c.userId}`)
+                } : {
+                    id: String(c.userId),
+                    name: `user_${c.userId}`,
+                    username: `user_${c.userId}`,
+                    avatar: 'https://via.placeholder.com/40'
+                },
+                likes: c.likes || 0,
+                dislikes: c.dislikes || 0,
+                isLiked: !!c.isLiked,
+                isDisliked: !!c.isDisliked,
+                replyCount: c.replyCount || c.replycount || c.repliesCount || (Array.isArray(c.replies) ? c.replies.length : 0),
+                replies: Array.isArray(c.replies) ? c.replies.map((r: any) => ({
+                    ...r,
+                    id: String(r.id),
+                    timestamp: r.createdAt || r.timestamp,
+                    author: r.author ? {
+                        ...r.author,
+                        name: (r.author.name && r.author.name !== 'Unknown' && !r.author.name.startsWith('User '))
+                            ? r.author.name
+                            : (r.author.username || `user_${r.userId}`)
+                    } : {
+                        id: String(r.userId),
+                        name: `user_${r.userId}`,
+                        username: `user_${r.userId}`,
+                        avatar: 'https://via.placeholder.com/40'
+                    }
+                })) : undefined
+            }));
+            console.log('Processed comments:', state.comments);
+        });
+
+        builder.addCase(fetchReplies.fulfilled, (state, action) => {
+            const { parentId, replies: rawReplies } = action.payload;
+            const replies = Array.isArray(rawReplies) ? rawReplies.map((r: any) => ({
+                ...r,
+                id: String(r.id),
+                timestamp: r.createdAt || r.timestamp,
+                author: r.author ? {
+                    ...r.author,
+                    name: (r.author.name && r.author.name !== 'Unknown' && !r.author.name.startsWith('User '))
+                        ? r.author.name
+                        : (r.author.username || `user_${r.userId}`)
+                } : {
+                    id: String(r.userId),
+                    name: `user_${r.userId}`,
+                    username: `user_${r.userId}`,
+                    avatar: 'https://via.placeholder.com/40'
+                }
+            })) : [];
+
+            // Find the parent comment and update its replies
+            const comment = state.comments.find(c => String(c.id) === String(parentId));
+            if (comment) {
+                comment.replies = replies;
+                comment.replyCount = replies.length;
+            }
+            console.log(`Processed replies for ${parentId}:`, replies);
+        });
+
     },
 });
 
