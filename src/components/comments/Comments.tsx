@@ -16,6 +16,8 @@ import {
   Check,
   ThumbsDown
 } from 'lucide-react';
+import { useAppDispatch } from '../../redux/slices/hooks';
+import { addToast } from '../../redux/slices/uiSlice';
 
 // Types
 interface User {
@@ -201,6 +203,18 @@ const CommentItem: React.FC<{
   const [editContent, setEditContent] = useState(comment.content);
   const [showReplies, setShowReplies] = useState(false);
   const [isLoadingReplies, setIsLoadingReplies] = useState(false);
+  const dispatch = useAppDispatch();
+
+  const showServiceUnavailable = () => {
+    dispatch(
+      addToast({
+        type: 'info',
+        title: 'Feature Unavailable',
+        message: 'this service is not available now',
+        duration: 3000,
+      })
+    );
+  };
 
   const isOwner = comment?.author?.id && currentUser?.id && String(comment.author.id) === String(currentUser.id);
   const canModerate = currentUser?.role === 'admin' || currentUser?.role === 'moderator';
@@ -316,14 +330,22 @@ const CommentItem: React.FC<{
                   {isOwner && (
                     <>
                       <button
-                        onClick={() => {setIsEditing(true); setShowActions(false);}}
+                        onClick={() => {
+                          showServiceUnavailable();
+                          // setIsEditing(true);
+                          setShowActions(false);
+                        }}
                         className="w-full flex items-center space-x-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-all"
                       >
                         <Edit3 className="w-4 h-4" />
                         <span>Edit</span>
                       </button>
                       <button
-                        onClick={() => {onDelete(comment.id); setShowActions(false);}}
+                        onClick={() => {
+                          showServiceUnavailable();
+                          // onDelete(comment.id);
+                          setShowActions(false);
+                        }}
                         className="w-full flex items-center space-x-3 px-4 py-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -344,7 +366,11 @@ const CommentItem: React.FC<{
 
                   {!isOwner && (
                     <button
-                      onClick={() => setShowReportMenu(true)}
+                      onClick={() => {
+                        showServiceUnavailable();
+                        // setShowReportMenu(true)
+                        setShowActions(false);
+                      }}
                       className="w-full flex items-center space-x-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-all"
                     >
                       <Flag className="w-4 h-4" />
