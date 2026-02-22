@@ -192,8 +192,8 @@ const HomePage: React.FC = () => {
         </div>
         
         {/* Main Content */}
-        <main className="flex-1 p-4 lg:p-6 lg:ml-72 pb-24 lg:pb-6">
-          <div className="max-w-6xl mx-auto">
+        <main className="flex-1 lg:ml-72 pb-24 lg:pb-6 overflow-x-hidden">
+          <div className="w-full px-4 lg:px-8">
             {/* Mobile Categories & Tags (Visible only on mobile/tablet) */}
             <div className="lg:hidden mb-6 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
               <div className="flex space-x-3">

@@ -221,7 +221,7 @@ const CreatePost: React.FC = () => {
 
       <div className="relative z-10">
         <header className="sticky top-0 z-50 glass-panel border-b border-white/10">
-          <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="w-full px-4 lg:px-8 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-6">
                 <button onClick={() => hasUnsavedChanges ? setShowExitModal(true) : window.history.back()}
@@ -281,7 +281,7 @@ const CreatePost: React.FC = () => {
           </div>
         </header>
 
-        <main className="max-w-7xl mx-auto px-6 py-8">
+        <main className="w-full px-4 lg:px-8 py-8">
           {currentTab === 'write' && (
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 pb-20 lg:pb-0">
               <div className="xl:col-span-2 space-y-6">
@@ -437,7 +437,7 @@ const CreatePost: React.FC = () => {
           )}
 
           {currentTab === 'settings' && (
-            <div className="max-w-2xl mx-auto space-y-8">
+            <div className="w-full px-4 lg:px-8 py-4">
               <div>
                 <h2 className="text-2xl font-bold text-white mb-2">Post Settings</h2>
                 <p className="text-gray-400">Configure publishing options and visibility</p>

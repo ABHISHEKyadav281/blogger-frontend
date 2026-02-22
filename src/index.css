@@ -2,16 +2,19 @@
 
 @theme {
   --color-background: #09090b;
-  --color-surface: #18181b; 
+  --color-surface: #18181b;
   --color-surface-highlight: #27272a;
-  
-  --color-primary: #e11d48; /* Rose 600 */
+
+  --color-primary: #e11d48;
+  /* Rose 600 */
   --color-primary-foreground: #fff1f2;
-  
-  --color-secondary: #475569; /* Slate 600 */
+
+  --color-secondary: #475569;
+  /* Slate 600 */
   --color-secondary-foreground: #f8fafc;
 
-  --color-accent: #fb7185; /* Rose 400 */
+  --color-accent: #fb7185;
+  /* Rose 400 */
   --color-accent-foreground: #fff1f2;
 
   --font-family-display: "Inter", "system-ui", "sans-serif";
@@ -29,11 +32,22 @@
   .glass-panel {
     @apply bg-surface/60 backdrop-blur-xl border border-white/10 shadow-xl;
   }
-  
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+  }
+
   .glass-panel-hover {
     @apply hover:bg-surface/80 hover:border-white/20 transition-all duration-300;
   }
-  
+
   .text-gradient-rose {
     @apply bg-gradient-to-r from-rose-400 to-orange-300 bg-clip-text text-transparent;
   }
