@@ -4,13 +4,14 @@ import {
   ArrowLeft,
   Heart,
   MessageCircle,
-  Share2,
   Bookmark,
   Eye,
   Calendar,
   Clock,
   Tag,
+  Share2,
 } from "lucide-react";
+import ShareModal from "./ShareModal";
 import { useAppDispatch, useAppSelector } from "../../redux/slices/hooks";
 import {
   fetchPostById,
@@ -41,6 +42,7 @@ const BlogPostDetail: React.FC = () => {
 
   const { user: currentUser } = useAppSelector((state) => state.auth);
   const [showComments, setShowComments] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   // Debug: Log when likesCount changes
   useEffect(() => {
@@ -194,27 +196,8 @@ const BlogPostDetail: React.FC = () => {
     }
   };
 
-  const handleShare = (platform: string) => {
-    const url = window.location.href;
-    const title = post?.title || "";
-    const shareUrls = {
-      twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-        title
-      )}&url=${encodeURIComponent(url)}`,
-      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-        url
-      )}`,
-      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
-        url
-      )}`,
-      copy: url,
-    };
-    if (platform === "copy") {
-      navigator.clipboard.writeText(url);
-      alert("Link copied to clipboard!");
-    } else {
-      window.open(shareUrls[platform as keyof typeof shareUrls], "_blank");
-    }
+  const handleShareClick = () => {
+    setIsShareModalOpen(true);
   };
 
   const handleAddComment = (content: string, parentId?: string) => {
@@ -298,7 +281,7 @@ const BlogPostDetail: React.FC = () => {
         <span>Back to posts</span>
       </button>
 
-      <article className="max-w-4xl mx-auto glass-panel rounded-2xl md:rounded-3xl border border-white/20 overflow-hidden mt-4 md:mt-6 p-4 md:p-6 lg:mx-auto mx-4">
+      <article className="max-w-7xl mx-auto glass-panel rounded-2xl md:rounded-3xl border border-white/20 overflow-hidden mt-4 md:mt-6 p-4 md:p-8 lg:mx-auto mx-4 shadow-2xl">
         <div className="relative h-64 md:h-96 overflow-hidden rounded-t-3xl">
           <img
             src={getImageSource()}
@@ -428,7 +411,7 @@ const BlogPostDetail: React.FC = () => {
             </button>
 
             <button
-              onClick={() => handleShare("copy")}
+              onClick={handleShareClick}
               className="flex items-center space-x-2 px-4 py-2 rounded-full text-gray-400 hover:text-green-400 hover:bg-green-500/10 transition-all duration-300"
             >
               <Share2 className="w-5 h-5" />
@@ -469,6 +452,13 @@ const BlogPostDetail: React.FC = () => {
           </div>
         )}
       </article>
+
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        url={window.location.href}
+        title={post?.title || ""}
+      />
     </div>
   );
 };

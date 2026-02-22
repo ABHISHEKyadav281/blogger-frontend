@@ -393,7 +393,7 @@ const SearchResultsPage: React.FC = () => {
       <div className="relative z-10">
         {/* Header */}
         <header className="sticky top-0 z-50 bg-black/20 backdrop-blur-xl border-b border-white/10">
-          <div className="max-w-6xl mx-auto px-6 py-4">
+          <div className="w-full px-4 lg:px-8 py-4">
             <div className="flex items-center space-x-6">
               <button
                 onClick={handleBack}
@@ -433,7 +433,7 @@ const SearchResultsPage: React.FC = () => {
         </header>
 
         {/* Main Content */}
-        <main className="max-w-6xl mx-auto px-6 py-8">
+        <main className="w-full px-4 lg:px-8 py-8">
           {/* Search Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-white mb-2">

@@ -96,7 +96,7 @@ const MyFollowsPage: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white p-6">
-            <div className="max-w-7xl mx-auto">
+            <div className="w-full px-4 lg:px-8">
                 <div className="flex items-center space-x-4 mb-8">
                     <button 
                         onClick={() => navigate(-1)}

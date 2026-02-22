@@ -3,8 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Eye,
   Calendar,
-  Clock
+  Clock,
+  Share2
 } from 'lucide-react';
+import { useState } from 'react';
+import ShareModal from './ShareModal';
 import { useAppDispatch } from '../../redux/slices/hooks';
 
 import { toggleSubscribe } from '../../redux/slices/postsListSlice';
@@ -18,6 +21,7 @@ interface BlogPreviewCardProps {
 const BlogPreviewCard: React.FC<BlogPreviewCardProps> = ({ post }) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   // Function to strip HTML tags
   const stripHtml = (html: string) => {
@@ -172,17 +176,34 @@ const BlogPreviewCard: React.FC<BlogPreviewCardProps> = ({ post }) => {
 
 
         {/* Read More Button */}
-        <div className="mt-4">
+        <div className="mt-4 flex items-center gap-2">
           <button
             onClick={(e) => {
               e.stopPropagation();
               navigate(`/post/${post.id}`);
             }}
-            className="w-full py-2 px-4 bg-white/5 hover:bg-white/10 border border-white/20 rounded-xl font-medium text-white transition-all duration-300 hover:border-primary/50"
+            className="flex-1 py-2 px-4 bg-white/5 hover:bg-white/10 border border-white/20 rounded-xl font-medium text-white transition-all duration-300 hover:border-primary/50"
           >
             Read Full Article →
           </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsShareModalOpen(true);
+            }}
+            className="p-2 bg-white/5 hover:bg-white/10 border border-white/20 rounded-xl text-gray-400 hover:text-green-400 transition-all duration-300"
+            title="Share"
+          >
+            <Share2 className="w-5 h-5" />
+          </button>
         </div>
+
+        <ShareModal
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          url={`${window.location.origin}/post/${post.id}`}
+          title={post.title}
+        />
       </div>
     </article>
   );
