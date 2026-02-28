@@ -14,7 +14,7 @@ import MyFollowsPage from "../pages/MyFollowsPage";
 import MyBlogsPage from "../pages/MyBlogsPage";
 import { useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
-import { loginSuccess } from "../redux/slices/authSlice";
+import { loginSuccess, logout } from "../redux/slices/authSlice";
 import { useAppDispatch } from "../redux/slices/hooks";
 
 interface TokenPayload {
@@ -28,14 +28,14 @@ export const AppRoutes = () => {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    const token = localStorage.getItem("authToken");
+    const token = localStorage.getItem("soloblogger_token");
     if (token) {
       try {
         const decoded: TokenPayload = jwtDecode(token);
 
         // Check if token is expired
         if (decoded.exp && decoded.exp * 1000 < Date.now()) {
-          localStorage.removeItem("authToken");
+          dispatch(logout());
           return;
         }
 
@@ -57,7 +57,7 @@ export const AppRoutes = () => {
         );
       } catch (error) {
         console.error("Invalid token:", error);
-        localStorage.removeItem("authToken");
+        dispatch(logout());
       }
     }
   }, [dispatch]);
