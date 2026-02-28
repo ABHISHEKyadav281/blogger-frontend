@@ -128,7 +128,7 @@ const AuthPage: React.FC = () => {
       }
 
       // Store token in localStorage
-      localStorage.setItem("authToken", authToken);
+      localStorage.setItem("soloblogger_token", authToken);
 
       // Decode token payload
       const decoded: TokenPayload = jwtDecode(authToken);
@@ -144,11 +144,6 @@ const AuthPage: React.FC = () => {
             avatar: "",
             isVerified: false,
             role: 'user',
-            stats: {
-              posts: 0,
-              followers: 0,
-              following: 0
-            }
           },
           token: authToken,
         })

@@ -8,7 +8,7 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("authToken");
+    const token = localStorage.getItem("soloblogger_token");
     console.log("first", token)
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -28,7 +28,10 @@ api.interceptors.response.use(
   (error) => {
     if (error.response) {
       if (error.response.status === 401) {
-        console.warn("Unauthorize");
+        console.warn("Unauthorized - Logging out");
+        localStorage.removeItem("soloblogger_token");
+        localStorage.removeItem("soloblogger_user");
+        window.location.href = "/auth";
       } else if (error.response.status === 500) {
         console.error("Server error:", error.response.data);
       }

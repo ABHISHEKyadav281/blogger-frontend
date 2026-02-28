@@ -1,6 +1,7 @@
 // store/slices/authSlice.ts
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { User } from '../../types';
+import { jwtDecode } from 'jwt-decode';
 
 interface AuthState {
   user: User | null;
@@ -11,13 +12,25 @@ interface AuthState {
 }
 
 // Read from local storage for initial state
-const savedUser = localStorage.getItem('animeblog_user');
-const savedToken = localStorage.getItem('animeblog_token');
+const savedUser = localStorage.getItem('soloblogger_user');
+const savedToken = localStorage.getItem('soloblogger_token');
+
+let isTokenValid = !!savedToken;
+if (savedToken) {
+  try {
+    const decoded: any = jwtDecode(savedToken);
+    if (decoded.exp && decoded.exp * 1000 < Date.now()) {
+      isTokenValid = false;
+    }
+  } catch (error) {
+    isTokenValid = false;
+  }
+}
 
 const initialState: AuthState = {
-  user: savedUser ? JSON.parse(savedUser) : null,
-  isAuthenticated: !!savedToken,
-  token: savedToken,
+  user: savedUser && isTokenValid ? JSON.parse(savedUser) : null,
+  isAuthenticated: isTokenValid,
+  token: isTokenValid ? savedToken : null,
   isLoading: false,
   error: null,
 };

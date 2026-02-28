@@ -16,14 +16,14 @@ listenerMiddleware.startListening({
     const state = listenerApi.getState() as any;
     if (action.type === loginSuccess.type || action.type === updateUser.type) {
       if (state.auth.user) {
-        localStorage.setItem('animeblog_user', JSON.stringify(state.auth.user));
+        localStorage.setItem('soloblogger_user', JSON.stringify(state.auth.user));
       }
       if (state.auth.token) {
-        localStorage.setItem('animeblog_token', state.auth.token);
+        localStorage.setItem('soloblogger_token', state.auth.token);
       }
     } else if (action.type === logout.type) {
-      localStorage.removeItem('animeblog_user');
-      localStorage.removeItem('animeblog_token');
+      localStorage.removeItem('soloblogger_user');
+      localStorage.removeItem('soloblogger_token');
     }
   },
 });
