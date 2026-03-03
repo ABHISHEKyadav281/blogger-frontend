@@ -25,6 +25,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../redux/slices/hooks';
 import { logout } from '../../redux/slices/authSlice';
 import { setFilters } from '../../redux/slices/postsListSlice';
+import { fetchUnreadCount } from '../../redux/slices/notificationSlice';
 
 const getAvatarFallback = (username?: string) => {
   const char = username ? username.charAt(0) : 'U';
@@ -136,9 +137,7 @@ const MobileMenu: React.FC<{
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
-  // const { notifications } = useAppSelector((state) => state.notifications);
-
-  // const unreadCount = notifications?.unreadCount || 0;
+  const { unreadCount } = useAppSelector((state) => state.notifications);
 
   const handleNavigate = (path: string) => {
     navigate(path);
@@ -226,6 +225,21 @@ const MobileMenu: React.FC<{
             </button>
 
             <button
+              onClick={() => handleNavigate('/notifications')}
+              className="w-full flex items-center justify-between p-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+            >
+              <div className="flex items-center space-x-3">
+                <Bell className="w-5 h-5" />
+                <span className="font-medium">Notifications</span>
+              </div>
+              {unreadCount > 0 && (
+                <span className="px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </button>
+
+            <button
               onClick={() => handleNavigate('/profile')}
               className="w-full flex items-center space-x-3 p-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-all"
             >
@@ -257,6 +271,7 @@ const Header: React.FC = () => {
   const dispatch = useAppDispatch();
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
   const filters = useAppSelector((state) => state.postsList.filters);
+  const { unreadCount } = useAppSelector((state) => state.notifications);
   
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
@@ -277,6 +292,17 @@ const Header: React.FC = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch(fetchUnreadCount());
+      // Optional: Poll for notifications every minute
+      const interval = setInterval(() => {
+        dispatch(fetchUnreadCount());
+      }, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [dispatch, isAuthenticated]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -339,6 +365,11 @@ const Header: React.FC = () => {
                 className="relative p-2 text-gray-400 hover:text-white transition-colors"
               >
                 <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
               </button>
               
               <button 
@@ -387,11 +418,11 @@ const Header: React.FC = () => {
 
               <button onClick={() => handleNavigate('/notifications')} className="relative p-2 text-gray-400 hover:text-white transition-colors">
                 <Bell className="w-6 h-6" />
-                {/* {unreadCount > 0 && (
+                {unreadCount > 0 && (
                   <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
-                )} */}
+                )}
               </button>
 
               {isAuthenticated && user && (
@@ -473,11 +504,11 @@ const Header: React.FC = () => {
               >
                 <item.icon className={`${item.special ? 'w-6 h-6 text-white' : 'w-5 h-5'}`} />
                 {!item.special && <span className="text-xs font-medium">{item.label}</span>}
-                {/* {item.badge && item.badge > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                    {item.badge > 9 ? '9+' : item.badge}
+                {item.label === 'Home' && unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
-                )} */}
+                )}
               </button>
             ))}
           </div>

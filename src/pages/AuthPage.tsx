@@ -144,6 +144,11 @@ const AuthPage: React.FC = () => {
             avatar: "",
             isVerified: false,
             role: 'user',
+            stats: {
+              posts: 0,
+              followers: 0,
+              following: 0
+            }
           },
           token: authToken,
         })

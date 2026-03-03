@@ -7,6 +7,7 @@ import searchSlice from './slices/searchSlice';
 import uiSlice from './slices/uiSlice';
 import subscriptionsReducer from './slices/userSubscriptionsSlice';
 import userProfileReducer from './slices/userProfileSlice';
+import notificationReducer from './slices/notificationSlice';
 
 const listenerMiddleware = createListenerMiddleware();
 
@@ -37,6 +38,7 @@ export const store = configureStore({
     ui: uiSlice,
     subscriptions: subscriptionsReducer,
     userProfile: userProfileReducer,
+    notifications: notificationReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

@@ -13,7 +13,11 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    config.headers["Content-Type"] = "application/json";
+
+    // Only set default Content-Type if not already specified (e.g. for FormData)
+    if (!config.headers["Content-Type"]) {
+      config.headers["Content-Type"] = "application/json";
+    }
     return config;
   },
   (error) => {

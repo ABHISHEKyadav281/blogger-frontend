@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
+import api from '../utils/api';
 import RichTextEditor from '../components/createPost/RichTextEditor';
 import PostPreview from '../components/createPost/PostPreview';
 
@@ -152,23 +153,19 @@ const CreatePost: React.FC = () => {
         formData.append('coverImage', coverImageFile);
       }
 
-      // Get auth token
-      const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-
       console.log('Sending request...');
       console.log('Title:', postData.title);
       console.log('Category:', postData.category);
       console.log('Status:', status);
       console.log('Has file:', !!coverImageFile);
 
-      // Send request
-      const response = await axios.post(
-        `${API_BASE_URL}/post/v1/createPost`,
+      // Send request using unified api utility
+      const response = await api.post(
+        `/post/v1/createPost`,
         formData,
         {
           headers: {
-            'Content-Type': 'multipart/form-data',
-            'Authorization': token ? `Bearer ${token}` : ''
+            'Content-Type': 'multipart/form-data'
           }
         }
       );
