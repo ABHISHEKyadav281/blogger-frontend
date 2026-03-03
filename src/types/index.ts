@@ -51,14 +51,18 @@ export interface Comment {
 }
 
 export interface Notification {
-  id: string;
-  type: 'like' | 'comment' | 'follow' | 'mention';
-  from: string;
-  avatar: string;
-  message: string;
-  timestamp: string;
+  id: string | number;
+  type: 'like' | 'comment' | 'follow' | 'mention' | 'info';
+  message: string | null;
   read: boolean;
-  postId?: string;
+  postId?: string | number;
+  // Backend specific / legacy fields
+  authorName?: string;
+  from?: string;
+  avatar?: string;
+  createdAt?: string;
+  timestamp?: string;
+  userId?: string | number;
 }
 
 export interface Post {

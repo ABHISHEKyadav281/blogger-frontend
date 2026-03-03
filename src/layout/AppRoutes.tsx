@@ -12,6 +12,7 @@ import CreatePostPage from "../pages/CreatePost";
 import MyBookmarksPage from "../pages/MyBookmarksPage";
 import MyFollowsPage from "../pages/MyFollowsPage";
 import MyBlogsPage from "../pages/MyBlogsPage";
+import NotificationsPage from "../pages/NotificationsPage";
 import { useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
 import { loginSuccess, logout } from "../redux/slices/authSlice";
@@ -152,6 +153,14 @@ export const AppRoutes = () => {
           element={
             <ProtectedRoute>
               <CreatePostPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <NotificationsPage />
             </ProtectedRoute>
           }
         />
