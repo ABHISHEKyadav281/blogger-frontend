@@ -21,11 +21,18 @@ import {
   fetchComments,
   fetchReplies,
 } from "../../redux/slices/postDetailSlice";
-import { toggleLike, toggleBookmark, likePost, bookmarkPost } from "../../redux/slices/postsListSlice";
+import {
+  toggleLike,
+  toggleBookmark,
+  likePost,
+  bookmarkPost,
+} from "../../redux/slices/postsListSlice";
+import { formatTimeAgo } from "../../utils/dateUtils";
 import {
   selectFollowerCount,
 } from "../../redux/slices/userSubscriptionsSlice";
 import api from "../../utils/api";
+import { API_BASE_URL } from "../../config";
 import Comments from "../comments/Comments";
 
 const BlogPostDetail: React.FC = () => {
@@ -49,12 +56,10 @@ const BlogPostDetail: React.FC = () => {
     console.log('Component re-rendered, post.likesCount:', post?.likesCount);
   }, [post?.likesCount]);
 
-  // ✅ Get subscription status from new slice
+  // ✅ Use data from post response instead of extra API calls
   const bloggerId = post?.author?.id;
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const followerCount = useAppSelector((state) =>
-    bloggerId ? selectFollowerCount(state, bloggerId) : 0
-  );
+  const isSubscribedFromPost = (post as any)?.subscribed ?? false;
+  const followerCountFromPost = post?.author?.followers ?? (post?.author as any)?.stats?.followers ?? 0;
 
   // Fetch post and comments on mount
   useEffect(() => {
@@ -74,28 +79,25 @@ const BlogPostDetail: React.FC = () => {
     };
   }, [postId, dispatch]);
   
-  // ✅ Check subscription status after post loads
-  const fetchIsSubsc = async () => {
-    if (post?.author?.id) {
-      try {
-        const resp = await api.get(`/user/action/is-subscribed?bloggerId=${post.author.id}`);
-        setIsSubscribed(resp?.data);
-      } catch (err) {
-        console.error("Failed to fetch subscription status:", err);
-      }
-    }
-  };
-
-  useEffect(() => {
-    fetchIsSubsc();
-  }, [post]);
+  // Subscription status is now handled directly by post data
 
   const getImageSource = () => {
     if (!post)
       return "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&h=600&fit=crop";
+    
     const postAny = post as any;
-    if (postAny.coverImageData) return postAny.coverImageData;
-    if (post.coverImage) return post.coverImage;
+    if (postAny.coverImageData) {
+      if (postAny.coverImageData.startsWith('data:image')) {
+        return postAny.coverImageData;
+      }
+      return `data:image/jpeg;base64,${postAny.coverImageData}`;
+    }
+
+    if (post.coverImage) {
+      if (post.coverImage.startsWith('http')) return post.coverImage;
+      return `${API_BASE_URL}${post.coverImage.startsWith('/') ? '' : '/'}${post.coverImage}`;
+    }
+    
     return "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&h=600&fit=crop";
   };
 
@@ -184,14 +186,23 @@ const BlogPostDetail: React.FC = () => {
     }
   };
 
+  // Placeholder for handleSubscribe if needed, though state is now in 'post'
   const handleSubscribe = async () => {
     if (bloggerId) {
-      if (!isSubscribed) {
-        await api.post(`/user/action/subscribe?bloggerId=${bloggerId}`);
-        setIsSubscribed(true);
-      } else {
-        await api.post(`/user/action/unsubscribe?bloggerId=${bloggerId}`);
-        setIsSubscribed(false);
+      // Note: Since we are using data from the 'post' object from Redux, 
+      // ideally we should have a toggle action in a slice.
+      // For now, keep the API call but realize the UI might not reflect immediately 
+      // without a re-fetch or state update.
+      try {
+        if (!isSubscribedFromPost) {
+          await api.post(`/user/action/subscribe?bloggerId=${bloggerId}`);
+        } else {
+          await api.post(`/user/action/unsubscribe?bloggerId=${bloggerId}`);
+        }
+        // Force re-fetch post to update the status and count
+        if (postId) dispatch(fetchPostById(postId));
+      } catch (err) {
+        console.error("Subscription toggle failed:", err);
       }
     }
   };
@@ -300,7 +311,7 @@ const BlogPostDetail: React.FC = () => {
             <div className="flex items-center space-x-4 text-gray-300 text-sm mt-2">
               <span className="flex items-center space-x-1">
                 <Calendar className="w-4 h-4" />
-                <span>{post.publishDate || "Unknown Date"}</span>
+                <span>{formatTimeAgo(post.createdAt)}</span>
               </span>
               <span className="flex items-center space-x-1">
                 <Clock className="w-4 h-4" />
@@ -339,10 +350,7 @@ const BlogPostDetail: React.FC = () => {
                 {post.author?.username || "Unknown Author"}
               </h3>
               <p className="text-gray-400 text-sm">
-                {followerCount > 0
-                  ? followerCount.toLocaleString()
-                  : (post.author?.stats?.followers || 0).toLocaleString()}{" "}
-                followers
+                {followerCountFromPost.toLocaleString()} followers
               </p>
               {post.author?.bio && (
                 <p className="text-gray-300 text-sm">{post.author.bio}</p>
@@ -353,12 +361,12 @@ const BlogPostDetail: React.FC = () => {
             onClick={handleSubscribe}
             disabled={!bloggerId}
             className={`px-6 py-3 rounded-full font-medium transition-all duration-300 ${
-              isSubscribed
+              isSubscribedFromPost
                 ? "bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30"
                 : "bg-primary text-white hover:bg-rose-600 hover:shadow-lg hover:scale-105"
             } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
-            {isSubscribed ? "Subscribed ✓" : "Subscribe"}
+            {isSubscribedFromPost ? "Subscribed ✓" : "Subscribe"}
           </button>
         </div>
 

@@ -8,12 +8,7 @@ export const formatTimeAgo = (date: string | Date | undefined): string => {
 
     let past: Date;
     if (typeof date === 'string') {
-        // If it looks like an ISO string but lacks timezone info, assume UTC
-        if (date.includes('T') && !date.includes('Z') && !date.includes('+')) {
-            past = new Date(date + 'Z');
-        } else {
-            past = new Date(date);
-        }
+        past = new Date(date);
     } else {
         past = date;
     }
@@ -24,21 +19,34 @@ export const formatTimeAgo = (date: string | Date | undefined): string => {
     const now = new Date();
     const seconds = Math.floor((now.getTime() - past.getTime()) / 1000);
 
+    // DEBUG: Comprehensive log for timezone and shift troubleshooting
+    console.log(`[TimeAgo]
+      Input: "${date}"
+      Parsed Date: ${past.toString()}
+      Parsed UTC: ${past.toUTCString()}
+      Parsed Local: ${past.toLocaleString()}
+      Current Client: ${now.toLocaleString()}
+      Diff (sec): ${seconds}
+      Diff (hrs): ${(seconds / 3600).toFixed(2)}h`);
+
     // Handle slight server/client clock skew
-    if (seconds < 30) return 'now';
+    if (Math.abs(seconds) < 30) return 'now';
+
+    // If date is in the future
+    if (seconds < 0) return 'just now';
 
     const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
+    if (minutes < 60) return `${minutes} min ago`;
 
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
+    if (hours < 24) return `${hours} hr ago`;
 
     const days = Math.floor(hours / 24);
-    if (days < 30) return `${days}d ago`;
+    if (days < 30) return `${days} ${days === 1 ? 'day' : 'days'} ago`;
 
     const months = Math.floor(days / 30);
-    if (months < 12) return `${months}mo ago`;
+    if (months < 12) return `${months} ${months === 1 ? 'month' : 'months'} ago`;
 
     const years = Math.floor(months / 12);
-    return `${years}y ago`;
+    return `${years} ${years === 1 ? 'year' : 'years'} ago`;
 };
