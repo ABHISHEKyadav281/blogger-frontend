@@ -3,7 +3,6 @@ import { Layout } from "./Layout";
 
 import HomePage from "../pages/HomePage";
 import BlogPostDetail from "../components/blog/BlogPostDetail";
-import CreatePost from "../components/createPost/CreatePost";
 import UserProfilePage from "../pages/UserProfilePage";
 import SearchResultsPage from "../pages/SearchResultsPage";
 import AuthPage from "../pages/AuthPage";
@@ -90,15 +89,6 @@ export const AppRoutes = () => {
           element={
             <ProtectedRoute>
               <BlogPostDetail />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/create"
-          element={
-            <ProtectedRoute>
-              <CreatePost />
             </ProtectedRoute>
           }
         />
