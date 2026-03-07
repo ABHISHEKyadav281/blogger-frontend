@@ -29,6 +29,7 @@ import {
   Sparkles,
   Trash2,
 } from 'lucide-react';
+import { API_BASE_URL } from '../../config';
 
 interface PostData {
   title: string;
@@ -227,7 +228,8 @@ const MediaUpload: React.FC<{
     >
       <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
       <h3 className="text-lg font-semibold text-white mb-2">Upload Media</h3>
-      <p className="text-gray-400 mb-4">Drag & drop images or videos, or click to browse</p>
+      <p className="text-gray-400 mb-2">Drag & drop images, or click to browse</p>
+      <p className="text-[10px] text-gray-500 mb-4">JPG, PNG, GIF or WEBP (Max 10MB)</p>
       <button
         onClick={() => fileInputRef.current?.click()}
         className="px-6 py-3 bg-gradient-to-r from-pink-500 to-violet-500 text-white font-medium rounded-xl hover:shadow-lg transition-all"
@@ -279,12 +281,28 @@ const PostPreview: React.FC<{ postData: PostData }> = ({ postData }) => {
 
   const selectedCategory = categories.find(cat => cat.id === postData.category);
 
+
+  const getPreviewImage = () => {
+    if (!postData.coverImage) return null;
+    if (postData.coverImage.startsWith('http') || postData.coverImage.startsWith('data:image')) {
+      return postData.coverImage;
+    }
+    return `${API_BASE_URL}${postData.coverImage.startsWith('/') ? '' : '/'}${postData.coverImage}`;
+  };
+
   return (
     <div className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 overflow-hidden">
       {/* Cover Image */}
       {postData.coverImage && (
         <div className="relative h-64 overflow-hidden">
-          <img src={postData.coverImage} alt={postData.title} className="w-full h-full object-cover" />
+          <img 
+            src={getPreviewImage() || ''} 
+            alt={postData.title} 
+            className="w-full h-full object-cover" 
+            onError={(e) => {
+              e.currentTarget.src = 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&h=600&fit=crop';
+            }}
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
           <div className="absolute bottom-4 left-4">
             {selectedCategory && (
@@ -413,9 +431,41 @@ const CreatePost: React.FC = () => {
     }));
   };
 
+  const coverImageInputRef = useRef<HTMLInputElement>(null);
+
+  const validateFile = (file: File) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const maxSize = 10 * 1024 * 1024; // 10MB
+
+    if (!allowedTypes.includes(file.type)) {
+      alert(`Invalid file type: ${file.name}. Only JPG, PNG, GIF, and WEBP are allowed.`);
+      return false;
+    }
+
+    if (file.size > maxSize) {
+      alert(`File size too large: ${file.name}. Maximum size is 10MB.`);
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && validateFile(file)) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPostData(prev => ({ ...prev, coverImage: e.target?.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleMediaUpload = (files: FileList) => {
     Array.from(files).forEach(file => {
-      console.log('Uploading file:', file.name);
+      if (validateFile(file)) {
+        console.log('Uploading file:', file.name);
+      }
     });
   };
 
@@ -535,7 +585,10 @@ const CreatePost: React.FC = () => {
                 {/* Media Upload */}
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-4">Media</h3>
-                  <MediaUpload onUpload={handleMediaUpload} />
+                  <MediaUpload 
+                    onUpload={handleMediaUpload} 
+                    accept=".jpg,.jpeg,.png,.gif,.webp"
+                  />
                 </div>
               </div>
 
@@ -544,22 +597,52 @@ const CreatePost: React.FC = () => {
                 {/* Cover Image */}
                 <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6">
                   <h3 className="text-lg font-semibold text-white mb-4">Cover Image</h3>
-                  <div className="space-y-4">
-                    <input
-                      type="url"
-                      placeholder="Enter image URL..."
-                      value={postData.coverImage}
-                      onChange={(e) => setPostData(prev => ({ ...prev, coverImage: e.target.value }))}
-                      className="w-full p-3 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-pink-400"
-                    />
-                    {postData.coverImage && (
-                      <img 
-                        src={postData.coverImage} 
-                        alt="Cover preview" 
-                        className="w-full h-32 object-cover rounded-xl"
+                    <div className="flex flex-col space-y-2">
+                       <input
+                        type="url"
+                        placeholder="Enter image URL..."
+                        value={postData.coverImage}
+                        onChange={(e) => setPostData(prev => ({ ...prev, coverImage: e.target.value }))}
+                        className="w-full p-3 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-pink-400"
                       />
+                      <div className="flex items-center space-x-2">
+                        <div className="flex-1 h-px bg-white/10" />
+                        <span className="text-gray-500 text-xs uppercase font-bold">OR</span>
+                        <div className="flex-1 h-px bg-white/10" />
+                      </div>
+                      <button
+                        onClick={() => coverImageInputRef.current?.click()}
+                        className="w-full flex items-center justify-center space-x-2 p-3 bg-white/5 hover:bg-white/10 border border-white/20 rounded-xl text-gray-300 hover:text-white transition-all"
+                      >
+                        <Upload className="w-4 h-4" />
+                        <span>Upload Image</span>
+                      </button>
+                      <input
+                        ref={coverImageInputRef}
+                        type="file"
+                        accept=".jpg,.jpeg,.png,.gif,.webp"
+                        onChange={handleCoverUpload}
+                        className="hidden"
+                      />
+                      <p className="text-[10px] text-gray-500 text-center">
+                        JPG, PNG, GIF or WEBP (Max 10MB)
+                      </p>
+                    </div>
+                    {postData.coverImage && (
+                      <div className="relative group">
+                        <img 
+                          src={postData.coverImage} 
+                          alt="Cover preview" 
+                          className="w-full h-32 object-cover rounded-xl border border-white/10"
+                        />
+                         <button
+                          onClick={() => setPostData(prev => ({ ...prev, coverImage: '' }))}
+                          className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     )}
-                  </div>
                 </div>
 
                 {/* Category */}

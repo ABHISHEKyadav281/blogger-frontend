@@ -12,6 +12,7 @@ export interface User {
     followers: number;
     following: number;
   };
+  followers?: number; // Added from new API response
   isSubscribed?: boolean;
 }
 
@@ -23,7 +24,7 @@ export interface BlogPost {
   content: string;
   excerpt: string;
   author: User;
-  publishDate: string;
+  createdAt: string;
   readTime: string;
   category: string;
   tags: string[];
@@ -37,6 +38,7 @@ export interface BlogPost {
   isLiked: boolean;
   isDisliked: boolean;
   dislikesCount: number;
+  subscribed?: boolean; // Added from new API response
 }
 
 export interface Comment {

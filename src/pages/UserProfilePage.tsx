@@ -159,9 +159,12 @@ const PostCard: React.FC<{
            onClick={() => onView(post.id)}>
         <div className="flex">
           <img 
-            src={post.coverImage} 
+            src={post.coverImage.startsWith('http') ? post.coverImage : `${API_BASE_URL}${post.coverImage.startsWith('/') ? '' : '/'}${post.coverImage}`} 
             alt={post.title}
             className="w-48 h-32 object-cover flex-shrink-0"
+            onError={(e) => {
+              e.currentTarget.src = 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=400&fit=crop';
+            }}
           />
           <div className="flex-1 p-4">
             <div className="flex items-center justify-between mb-2">
@@ -213,9 +216,12 @@ const PostCard: React.FC<{
     <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 overflow-hidden hover:shadow-2xl transition-all duration-300 hover:transform hover:scale-[1.02] cursor-pointer"
          onClick={() => onView(post.id)}>
       <img 
-        src={post.coverImage} 
+        src={post.coverImage.startsWith('http') ? post.coverImage : `${API_BASE_URL}${post.coverImage.startsWith('/') ? '' : '/'}${post.coverImage}`} 
         alt={post.title}
         className="w-full h-40 object-cover"
+        onError={(e) => {
+          e.currentTarget.src = 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=400&fit=crop';
+        }}
       />
       <div className="p-4">
         <div className="flex items-center justify-between mb-3">
@@ -288,9 +294,30 @@ const EditProfileModal: React.FC<{
     onClose();
   };
 
+  const validateFile = (file: File) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    const maxSize = 10 * 1024 * 1024; // 10MB
+
+    const isAllowedType = allowedTypes.includes(file.type);
+    const isAllowedExtension = fileExtension ? allowedExtensions.includes(fileExtension) : false;
+
+    if (!isAllowedType || !isAllowedExtension) {
+      alert(`Invalid file: ${file.name}. Only JPG, PNG, GIF, and WEBP are allowed. AVIF and other formats are strictly prohibited.`);
+      return false;
+    }
+
+    if (file.size > maxSize) {
+      alert(`File size too large: ${file.name}. Maximum size is 10MB.`);
+      return false;
+    }
+    return true;
+  };
+
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (file && validateFile(file)) {
       const reader = new FileReader();
       reader.onload = (e) => {
         setEditedUser(prev => ({ ...prev, avatar: e.target?.result as string }));
@@ -301,7 +328,7 @@ const EditProfileModal: React.FC<{
 
   const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (file && validateFile(file)) {
       const reader = new FileReader();
       reader.onload = (e) => {
         setEditedUser(prev => ({ ...prev, coverImage: e.target?.result as string }));
@@ -358,9 +385,12 @@ const EditProfileModal: React.FC<{
                   <div className="h-32 bg-gradient-to-r from-pink-500/20 to-violet-500/20 rounded-xl overflow-hidden">
                     {editedUser.coverImage && (
                       <img 
-                        src={editedUser.coverImage} 
+                        src={editedUser.coverImage.startsWith('http') || editedUser.coverImage.startsWith('data:image') ? editedUser.coverImage : `${API_BASE_URL}${editedUser.coverImage.startsWith('/') ? '' : '/'}${editedUser.coverImage}`} 
                         alt="Cover" 
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=200&fit=crop';
+                        }}
                       />
                     )}
                   </div>
@@ -386,9 +416,12 @@ const EditProfileModal: React.FC<{
                 <div className="flex items-center space-x-4">
                   <div className="relative">
                     <img
-                      src={editedUser.avatar}
+                      src={editedUser.avatar.startsWith('http') || editedUser.avatar.startsWith('data:image') ? editedUser.avatar : `${API_BASE_URL}${editedUser.avatar.startsWith('/') ? '' : '/'}${editedUser.avatar}`}
                       alt="Avatar"
                       className="w-20 h-20 rounded-full border-4 border-white/20"
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://via.placeholder.com/150';
+                      }}
                     />
                     <button
                       onClick={() => avatarInputRef.current?.click()}
@@ -920,7 +953,14 @@ const UserProfilePage: React.FC = () => {
             {/* Cover Image */}
             <div className="relative h-48 md:h-64">
               {user.coverImage ? (
-                <img src={user.coverImage} alt="Cover" className="w-full h-full object-cover" />
+                <img 
+                  src={user.coverImage.startsWith('http') || user.coverImage.startsWith('data:image') ? user.coverImage : `${API_BASE_URL}${user.coverImage.startsWith('/') ? '' : '/'}${user.coverImage}`} 
+                  alt="Cover" 
+                  className="w-full h-full object-cover" 
+                  onError={(e) => {
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&h=600&fit=crop';
+                  }}
+                />
               ) : (
                 <div className="w-full h-full bg-gradient-to-r from-pink-500/20 to-violet-500/20" />
               )}
@@ -932,9 +972,12 @@ const UserProfilePage: React.FC = () => {
               <div className="flex flex-col md:flex-row md:items-start md:space-x-6 -mt-16 md:-mt-20 relative">
                 <div className="relative mb-4 md:mb-0">
                   <img
-                    src={user.avatar}
+                    src={user.avatar.startsWith('http') || user.avatar.startsWith('data:image') ? user.avatar : `${API_BASE_URL}${user.avatar.startsWith('/') ? '' : '/'}${user.avatar}`}
                     alt={user.name}
                     className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-white/20 bg-black/50"
+                    onError={(e) => {
+                      e.currentTarget.src = 'https://via.placeholder.com/150';
+                    }}
                   />
                   {user.role && getRoleIcon(user.role) && (
                     <div className="absolute -bottom-2 -right-2 bg-gray-900 rounded-full p-2">

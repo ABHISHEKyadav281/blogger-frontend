@@ -134,7 +134,7 @@ const BlogPreviewCard: React.FC<BlogPreviewCardProps> = ({ post }) => {
               </p> {/* Gap user name and post time */}
               <div className="flex items-center space-x-2 text-sm text-gray-400">
                 <Calendar className="w-4 h-4" />
-                <span>{formatTimeAgo(post.publishDate)}</span>
+                <span>{formatTimeAgo(post.createdAt)}</span>
                 <span>•</span>
                 <Clock className="w-4 h-4" />
                 <span>{post.readTime}</span>
