@@ -8,6 +8,7 @@ import { API_BASE_URL } from '../config';
 import api from '../utils/api';
 import RichTextEditor from '../components/createPost/RichTextEditor';
 import PostPreview from '../components/createPost/PostPreview';
+import { useNavigate } from 'react-router-dom';
 
 interface PostData {
   title: string;
@@ -60,6 +61,8 @@ const CreatePost: React.FC = () => {
   const [publishing, setPublishing] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  const navigate=useNavigate();
 
   useEffect(() => {
     const hasContent = !!(postData.title.trim() || postData.content.trim() || coverImageFile !== null);
@@ -176,6 +179,7 @@ const CreatePost: React.FC = () => {
       
       if (status === 'PUBLISHED') {
         alert('Post published successfully! 🎉');
+        navigate("/")
       } else {
         alert('Draft saved! 💾');
       }
@@ -290,60 +294,14 @@ const CreatePost: React.FC = () => {
                 
                 <div className="relative group">
                   <textarea placeholder="Write a compelling excerpt (optional)..." value={postData.excerpt}
-                    onChange={(e) => setPostData(prev => ({ ...prev, excerpt: e.target.value }))} rows={2}
+                    onChange={(e) => setPostData(prev => ({ ...prev, excerpt: e.target.value }))} rows={3}
                     className="w-full text-xl bg-transparent text-gray-300 placeholder-gray-500 focus:outline-none border-b border-white/10 focus:border-primary/50 resize-none px-0 pb-4 transition-all" />
                 </div>
 
                 <RichTextEditor content={postData.content}
                   onChange={(content) => setPostData(prev => ({ ...prev, content }))} />
 
-                {/* Tags Section - Moved from Sidebar */}
-                <div className="glass-panel rounded-2xl border border-white/20 p-6">
-                  <h3 className="text-lg font-semibold text-white mb-4">Tags</h3>
-                  
-                  {postData.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {postData.tags.map((tag, index) => (
-                        <span key={index} className="flex items-center space-x-1 bg-primary/20 text-accent px-3 py-1 rounded-full text-sm">
-                          <span>#{tag}</span>
-                          <button onClick={() => removeTag(tag)} className="text-pink-400 hover:text-pink-300">
-                            <X className="w-3 h-3" />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="relative">
-                    <input type="text" placeholder="Add tags..." value={newTag}
-                      onChange={(e) => { setNewTag(e.target.value); setShowTagSuggestions(e.target.value.length > 0); }}
-                      onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(newTag); } }}
-                      className="w-full p-3 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-pink-400" />
-
-                    {showTagSuggestions && tagSuggestions.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-black/90 backdrop-blur-xl rounded-xl border border-white/20 shadow-2xl max-h-48 overflow-y-auto z-10">
-                        {tagSuggestions.slice(0, 10).map((tag) => (
-                          <button key={tag} onClick={() => addTag(tag)}
-                            className="w-full text-left px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-all first:rounded-t-xl last:rounded-b-xl">
-                            #{tag}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="mt-4">
-                    <p className="text-sm text-gray-400 mb-2">Popular tags:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {popularTags.slice(0, 8).map((tag) => (
-                        <button key={tag} onClick={() => addTag(tag)} disabled={postData.tags.includes(tag)}
-                          className="px-2 py-1 bg-white/5 hover:bg-pink-500/20 text-gray-400 hover:text-pink-300 rounded text-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                          #{tag}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+               
               </div>
 
               <div className="space-y-6">
@@ -400,6 +358,55 @@ const CreatePost: React.FC = () => {
                   )}
                 </div>
 
+                   {/* Tags Section - Moved from Sidebar */}
+                <div className="glass-panel rounded-2xl border border-white/20 p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4">Tags</h3>
+                  
+                  {postData.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {postData.tags.map((tag, index) => (
+                        <span key={index} className="flex items-center space-x-1 bg-primary/20 text-accent px-3 py-1 rounded-full text-sm">
+                          <span>#{tag}</span>
+                          <button onClick={() => removeTag(tag)} className="text-pink-400 hover:text-pink-300">
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="relative">
+                    <input type="text" placeholder="Add tags..." value={newTag}
+                      onChange={(e) => { setNewTag(e.target.value); setShowTagSuggestions(e.target.value.length > 0); }}
+                      onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(newTag); } }}
+                      className="w-full p-3 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-pink-400" />
+
+                    {showTagSuggestions && tagSuggestions.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-black/90 backdrop-blur-xl rounded-xl border border-white/20 shadow-2xl max-h-48 overflow-y-auto z-10">
+                        {tagSuggestions.slice(0, 10).map((tag) => (
+                          <button key={tag} onClick={() => addTag(tag)}
+                            className="w-full text-left px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-all first:rounded-t-xl last:rounded-b-xl">
+                            #{tag}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-4">
+                    <p className="text-sm text-gray-400 mb-2">Popular tags:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {popularTags.slice(0, 8).map((tag) => (
+                        <button key={tag} onClick={() => addTag(tag)} disabled={postData.tags.includes(tag)}
+                          className="px-2 py-1 bg-white/5 hover:bg-pink-500/20 text-gray-400 hover:text-pink-300 rounded text-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                          #{tag}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                
                 <div className="glass-panel rounded-2xl border border-white/20 p-6">
                   <h3 className="text-lg font-semibold text-white mb-4">Category *</h3>
                   <div className="space-y-3">
