@@ -24,11 +24,26 @@ export const fetchNotifications = createAsyncThunk(
     'notifications/fetchAll',
     async ({ page = 0, limit = 20 }: { page?: number; limit?: number }, { rejectWithValue }) => {
         try {
-            const response: any = await api.get(`/notifications?page=${page}&limit=${limit}`);
-            const apiData = response.data; // Already returned response.data by interceptor
+            const apiData: any = await api.get(`/notifications?page=${page}&limit=${limit}`);
+            
+            // Handle various backend response structures
+            let notificationsArray = [];
+            if (Array.isArray(apiData)) {
+                notificationsArray = apiData;
+            } else if (Array.isArray(apiData?.data?.notifications)) {
+                notificationsArray = apiData.data.notifications;
+            } else if (Array.isArray(apiData?.notifications)) {
+                notificationsArray = apiData.notifications;
+            } else if (Array.isArray(apiData?.data)) {
+                notificationsArray = apiData.data;
+            } else if (Array.isArray(apiData?.content)) {
+                notificationsArray = apiData.content;
+            }
+
+            const totalPages = apiData?.totalPages || apiData?.data?.totalPages || 0;
 
             // Robust mapping of backend fields to frontend interface
-            const mappedNotifications = (apiData.notifications || []).map((n: any) => ({
+            const mappedNotifications = notificationsArray.map((n: any) => ({
                 ...n,
                 id: String(n.id),
                 type: n.type || 'info',
@@ -41,7 +56,7 @@ export const fetchNotifications = createAsyncThunk(
             return {
                 notifications: mappedNotifications,
                 page,
-                hasMore: page < (apiData.totalPages || 0) - 1
+                hasMore: page < (totalPages || 0) - 1
             };
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message || 'Failed to fetch notifications');
@@ -53,11 +68,28 @@ export const fetchUnreadCount = createAsyncThunk(
     'notifications/fetchCount',
     async (_, { rejectWithValue }) => {
         try {
-            const response: any = await api.get('/notifications/count');
-            const apiData = response.data;
-            return apiData.unreadCount;
+            const apiData: any = await api.get('/notifications/count');
+            // Handle various backend response structures for count
+            if (typeof apiData === 'number') return apiData;
+            if (typeof apiData?.data?.unreadCount === 'number') return apiData.data.unreadCount;
+            if (typeof apiData?.unreadCount === 'number') return apiData.unreadCount;
+            if (typeof apiData?.data === 'number') return apiData.data;
+            
+            return 0;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message || 'Failed to fetch unread count');
+        }
+    }
+);
+
+export const markNotificationAsRead = createAsyncThunk(
+    'notifications/markOneAsRead',
+    async (notificationId: string, { rejectWithValue }) => {
+        try {
+            await api.post(`/notifications/read?notificationId=${notificationId}`);
+            return notificationId;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.message || 'Failed to mark notification as read');
         }
     }
 );
@@ -93,13 +125,14 @@ const notificationSlice = createSlice({
             })
             .addCase(fetchNotifications.fulfilled, (state, action) => {
                 state.isLoading = false;
-                if (action.payload.page === 0) {
-                    state.notifications = action.payload.notifications;
+                const payload = action.payload as any;
+                if (payload.page === 0) {
+                    state.notifications = payload.notifications;
                 } else {
-                    state.notifications = [...state.notifications, ...action.payload.notifications];
+                    state.notifications = [...state.notifications, ...payload.notifications];
                 }
-                state.page = action.payload.page;
-                state.hasMore = action.payload.hasMore;
+                state.page = payload.page;
+                state.hasMore = payload.hasMore;
             })
             .addCase(fetchNotifications.rejected, (state, action) => {
                 state.isLoading = false;
@@ -107,12 +140,20 @@ const notificationSlice = createSlice({
             })
             // Fetch Unread Count
             .addCase(fetchUnreadCount.fulfilled, (state, action) => {
-                state.unreadCount = action.payload;
+                state.unreadCount = action.payload as number;
             })
             // Mark All As Read
             .addCase(markAllAsRead.fulfilled, (state) => {
                 state.unreadCount = 0;
                 state.notifications = state.notifications.map(n => ({ ...n, read: true }));
+            })
+            // Mark One As Read
+            .addCase(markNotificationAsRead.fulfilled, (state, action) => {
+                const notification = state.notifications.find(n => n.id === action.payload as string);
+                if (notification && !notification.read) {
+                    notification.read = true;
+                    state.unreadCount = Math.max(0, state.unreadCount - 1);
+                }
             });
     },
 });

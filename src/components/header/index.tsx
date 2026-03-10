@@ -25,7 +25,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../redux/slices/hooks';
 import { logout } from '../../redux/slices/authSlice';
 import { setFilters } from '../../redux/slices/postsListSlice';
-import { fetchUnreadCount } from '../../redux/slices/notificationSlice';
+import { fetchUnreadCount, fetchNotifications } from '../../redux/slices/notificationSlice';
 
 const getAvatarFallback = (username?: string) => {
   const char = username ? username.charAt(0) : 'U';
@@ -224,20 +224,6 @@ const MobileMenu: React.FC<{
               <span className="font-medium">Bookmarks</span>
             </button>
 
-            <button
-              onClick={() => handleNavigate('/notifications')}
-              className="w-full flex items-center justify-between p-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-all"
-            >
-              <div className="flex items-center space-x-3">
-                <Bell className="w-5 h-5" />
-                <span className="font-medium">Notifications</span>
-              </div>
-              {unreadCount > 0 && (
-                <span className="px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </span>
-              )}
-            </button>
 
             <button
               onClick={() => handleNavigate('/profile')}
@@ -296,11 +282,7 @@ const Header: React.FC = () => {
   useEffect(() => {
     if (isAuthenticated) {
       dispatch(fetchUnreadCount());
-      // Optional: Poll for notifications every minute
-      const interval = setInterval(() => {
-        dispatch(fetchUnreadCount());
-      }, 60000);
-      return () => clearInterval(interval);
+      dispatch(fetchNotifications({ page: 0 }));
     }
   }, [dispatch, isAuthenticated]);
 
@@ -356,7 +338,10 @@ const Header: React.FC = () => {
             </div>
 
             <div className="flex items-center space-x-2">
-              <button onClick={() => setShowMobileSearch(true)} className="p-2 text-gray-400 hover:text-white transition-colors">
+              <button 
+                onClick={() => setShowMobileSearch(true)} 
+                className="hidden md:block p-2 text-gray-400 hover:text-white transition-colors"
+              >
                 <Search className="w-5 h-5" />
               </button>
 
@@ -366,8 +351,8 @@ const Header: React.FC = () => {
               >
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
-                    {unreadCount > 9 ? '9+' : unreadCount}
+                  <span className="absolute -top-1 -right-1 flex h-4.5 w-4.5 items-center justify-center bg-rose-500/20 text-[11px] font-bold text-rose-500 rounded-full border border-rose-500/20">
+                    {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}
               </button>
@@ -419,8 +404,8 @@ const Header: React.FC = () => {
               <button onClick={() => handleNavigate('/notifications')} className="relative p-2 text-gray-400 hover:text-white transition-colors">
                 <Bell className="w-6 h-6" />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                    {unreadCount > 9 ? '9+' : unreadCount}
+                  <span className="absolute -top-1.5 -right-1.5 flex h-5.5 w-5.5 items-center justify-center bg-rose-500/20 text-xs font-bold text-rose-500 rounded-full border border-rose-500/20">
+                    {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}
               </button>
@@ -488,7 +473,7 @@ const Header: React.FC = () => {
               { icon: Home, label: 'Home', path: '/', active: true },
               { icon: Search, label: 'Search', action: () => setShowMobileSearch(true) },
               { icon: PenTool, label: 'Create', path: '/createPost', special: true },
-              { icon: Bookmark, label: 'Bookmarks', path: '/bookmarks' },
+              { icon: Bookmark, label: 'Saved', path: '/bookmarks' },
               { icon: User, label: 'Profile', path: '/profile' }
             ].map((item, idx) => (
               <button
@@ -496,7 +481,7 @@ const Header: React.FC = () => {
                 onClick={() => item.action ? item.action() : navigate(item.path!)}
                 className={`relative flex flex-col items-center space-y-1 p-2 transition-all ${
                   item.special
-                    ? 'p-3 bg-gradient-to-r from-rose-500 to-orange-400 rounded-full -mt-4 shadow-lg'
+                    ? 'p-2.5 bg-gradient-to-r from-rose-500 to-orange-400 rounded-xl shadow-lg'
                     : item.active
                     ? 'text-pink-400'
                     : 'text-gray-400 hover:text-white'
@@ -504,11 +489,6 @@ const Header: React.FC = () => {
               >
                 <item.icon className={`${item.special ? 'w-6 h-6 text-white' : 'w-5 h-5'}`} />
                 {!item.special && <span className="text-xs font-medium">{item.label}</span>}
-                {item.label === 'Home' && unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
               </button>
             ))}
           </div>

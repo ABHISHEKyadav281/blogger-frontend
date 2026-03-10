@@ -853,7 +853,7 @@ const UserProfilePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-white">
+      <div className="max-w-7xl mx-auto">
       {/* Background Effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
@@ -879,73 +879,6 @@ const UserProfilePage: React.FC = () => {
           </div>
         )}
 
-        {/* Header */}
-        <header className="sticky top-0 z-50 glass-panel border-b border-white/10">
-          <div className="max-w-7xl mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => window.history.back()}
-                className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-                <span>Back</span>
-              </button>
-              
-              <div className="flex items-center space-x-4">
-                {!isOwnProfile && (
-                  <>
-                    <button className="p-2 text-gray-400 hover:text-white transition-colors">
-                      <Bell className="w-5 h-5" />
-                    </button>
-                    <button className="p-2 text-gray-400 hover:text-white transition-colors">
-                      <Share2 className="w-5 h-5" />
-                    </button>
-                  </>
-                )}
-                
-                <div className="relative">
-                  <button
-                    onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="p-2 text-gray-400 hover:text-white transition-colors"
-                  >
-                    <MoreHorizontal className="w-5 h-5" />
-                  </button>
-                  
-                  {showUserMenu && (
-                    <div className="absolute right-0 top-full mt-2 bg-black/90 backdrop-blur-xl rounded-2xl border border-white/20 shadow-2xl py-2 min-w-48">
-                      {isOwnProfile ? (
-                        <>
-                          <button
-                            onClick={() => {setShowEditModal(true); setShowUserMenu(false);}}
-                            className="w-full flex items-center space-x-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-all"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                            <span>Edit Profile</span>
-                          </button>
-                          <button className="w-full flex items-center space-x-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-all">
-                            <Settings className="w-4 h-4" />
-                            <span>Settings</span>
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button className="w-full flex items-center space-x-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-all">
-                            <Flag className="w-4 h-4" />
-                            <span>Report User</span>
-                          </button>
-                          <button className="w-full flex items-center space-x-3 px-4 py-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all">
-                            <Ban className="w-4 h-4" />
-                            <span>Block User</span>
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
 
         {/* Profile Header */}
         <div className="max-w-7xl mx-auto px-6 py-8">
@@ -965,6 +898,56 @@ const UserProfilePage: React.FC = () => {
                 <div className="w-full h-full bg-gradient-to-r from-pink-500/20 to-violet-500/20" />
               )}
               <div className="absolute inset-0 bg-black/20" />
+              
+              {/* Profile Navigation Overlays */}
+              <div className="absolute top-[10px] left-4 right-4 z-20 flex items-center justify-between">
+                <button 
+                  onClick={() => navigate('/')}
+                  className="p-2.5 bg-black/40 backdrop-blur-md border border-white/20 rounded-2xl text-white hover:bg-black/60 transition-all group scale-100 active:scale-95"
+                >
+                  <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                </button>
+
+                <div className="relative group/menu">
+                  <button
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                    className="p-2.5 bg-black/40 backdrop-blur-md border border-white/20 rounded-2xl text-white hover:bg-black/60 transition-all scale-100 active:scale-95"
+                  >
+                    <MoreHorizontal className="w-5 h-5" />
+                  </button>
+                  
+                  {showUserMenu && (
+                    <div className="absolute right-0 top-full mt-2 bg-black/90 backdrop-blur-xl rounded-2xl border border-white/20 shadow-2xl py-2 min-w-48 z-50 animate-in fade-in zoom-in-95 duration-200">
+                      {isOwnProfile ? (
+                        <>
+                          <button
+                            onClick={() => {setShowEditModal(true); setShowUserMenu(false);}}
+                            className="w-full flex items-center space-x-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-all"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                            <span className="text-sm font-medium">Edit Profile</span>
+                          </button>
+                          <button className="w-full flex items-center space-x-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-all border-t border-white/5 mt-1 pt-3">
+                            <Settings className="w-4 h-4" />
+                            <span className="text-sm font-medium">Settings</span>
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button className="w-full flex items-center space-x-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-all">
+                            <Flag className="w-4 h-4" />
+                            <span className="text-sm font-medium">Report User</span>
+                          </button>
+                          <button className="w-full flex items-center space-x-3 px-4 py-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all border-t border-white/5 mt-1 pt-3">
+                            <Ban className="w-4 h-4" />
+                            <span className="text-sm font-medium">Block User</span>
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="p-6 md:p-8">
@@ -1341,7 +1324,6 @@ const UserProfilePage: React.FC = () => {
         </div>
       </div>
 
-      {/* Edit Profile Modal */}
       <EditProfileModal
         user={user}
         isOpen={showEditModal}

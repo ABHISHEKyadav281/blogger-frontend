@@ -5,14 +5,14 @@ import ToastContainer from "../components/ui/Toast.tsx";
 
 export const Layout: React.FC = () => {
   const location = useLocation();
-  const hideHeaderRoutes = ["/createPost", "/create"];
-  const shouldHideHeader = hideHeaderRoutes.includes(location.pathname);
+  const showHeaderRoutes = ["/", "/home"];
+  const shouldShowHeader = showHeaderRoutes.includes(location.pathname);
 
   return (
     <div className="min-h-screen flex flex-col">
-      {!shouldHideHeader && <Header />}
+      {shouldShowHeader && <Header />}
 
-      <main className="flex-grow w-full py-8">
+      <main className={`flex-grow w-full ${shouldShowHeader ? 'py-8' : ''}`}>
         <Outlet /> 
       </main>
 

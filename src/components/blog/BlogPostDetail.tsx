@@ -284,16 +284,18 @@ const BlogPostDetail: React.FC = () => {
         />
       </div>
 
-      <button
-        onClick={() => navigate(-1)}
-        className="flex items-center space-x-2 text-gray-400 hover:text-white ml-4 transition-all duration-300 hover:transform hover:translate-x-1"
-      >
-        <ArrowLeft className="w-5 h-5" />
-        <span>Back to posts</span>
-      </button>
 
       <article className="max-w-7xl mx-auto glass-panel rounded-2xl md:rounded-3xl border border-white/20 overflow-hidden mt-4 md:mt-6 p-4 md:p-8 lg:mx-auto mx-4 shadow-2xl">
         <div className="relative h-64 md:h-96 overflow-hidden rounded-t-3xl">
+          <div className="absolute top-[10px] left-4 z-20">
+            <button 
+              onClick={() => navigate('/')}
+              className="p-2.5 bg-black/40 backdrop-blur-md border border-white/20 rounded-2xl text-white hover:bg-black/60 transition-all group scale-100 active:scale-95 flex items-center space-x-2"
+            >
+              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+              <span className="text-sm font-medium pr-1">Back</span>
+            </button>
+          </div>
           <img
             src={getImageSource()}
             alt={post.title || "Post Image"}

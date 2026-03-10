@@ -18,30 +18,37 @@ const MyBlogsPage: React.FC = () => {
     }, [dispatch, user?.id]);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white p-6">
-            <div className="w-full px-4 lg:px-8">
-                <div className="flex items-center justify-between mb-8">
-                    <div className="flex items-center space-x-4">
-                        <button 
-                            onClick={() => navigate(-1)}
-                            className="p-2 hover:bg-white/10 rounded-full transition-colors"
-                        >
-                            <ArrowLeft className="w-6 h-6" />
-                        </button>
-                        <div className="flex items-center space-x-3">
-                            <div className="p-3 bg-pink-500/20 rounded-xl">
-                                <PenTool className="w-6 h-6 text-pink-500" />
-                            </div>
-                            <h1 className="text-3xl font-bold">My Blogs</h1>
-                        </div>
-                    </div>
-                    <button
-                        onClick={() => navigate('/createPost')}
-                        className="px-6 py-2 bg-gradient-to-r from-pink-500 to-violet-500 rounded-xl font-medium hover:shadow-lg transition-all"
-                    >
-                        Create New Post
-                    </button>
-                </div>
+        <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+        <div className="flex items-center space-x-4">
+          <div className="p-3 bg-pink-500/20 rounded-2xl">
+            <PenTool className="w-6 h-6 text-pink-500" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-white">My Blogs</h1>
+            <p className="text-gray-400">Manage and edit your published articles</p>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-4">
+          <button 
+            onClick={() => navigate('/')}
+            className="flex items-center space-x-2 text-gray-400 hover:text-white transition-all group"
+          >
+            <div className="p-2 bg-white/5 rounded-xl group-hover:bg-white/10 transition-all border border-white/10">
+              <ArrowLeft className="w-5 h-5" />
+            </div>
+            <span className="font-medium">Back</span>
+          </button>
+          
+          <button
+            onClick={() => navigate('/createPost')}
+            className="px-6 py-3 bg-gradient-to-r from-pink-500 to-violet-500 text-white font-medium rounded-xl hover:shadow-lg transition-all"
+          >
+            Create New Post
+          </button>
+        </div>
+      </div>
 
                 {isLoading ? (
                     <div className="flex justify-center items-center h-64">
@@ -74,7 +81,6 @@ const MyBlogsPage: React.FC = () => {
                     </div>
                 )}
             </div>
-        </div>
     );
 };
 
