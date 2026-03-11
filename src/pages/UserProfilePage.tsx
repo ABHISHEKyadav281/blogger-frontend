@@ -42,9 +42,9 @@ import {
   Ban,
   Flag,
   Link as LinkIcon,
-  Sparkles,
   Check
 } from 'lucide-react';
+import ImageModal from '../components/ui/ImageModal';
 
 // Types
 interface User {

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import ShareModal from './ShareModal';
+import ImageModal from '../ui/ImageModal';
 import { useAppDispatch } from '../../redux/slices/hooks';
 
 import { API_BASE_URL } from '../../config';
