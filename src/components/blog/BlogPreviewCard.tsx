@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import ShareModal from './ShareModal';
+import ImageModal from '../ui/ImageModal';
 import { useAppDispatch } from '../../redux/slices/hooks';
 
 import { API_BASE_URL } from '../../config';
@@ -113,15 +114,38 @@ const BlogPreviewCard: React.FC<BlogPreviewCardProps> = ({ post }) => {
         {/* Author Info */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-4"> {/* Gap profile pic and author name */}
-            <img
-              src={post.author?.avatar || 'https://via.placeholder.com/40'}
-              alt={post.author?.username}
-              className="w-10 h-10 rounded-full cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (post.author?.id) navigate(`/profile/${post.author.id}`);
-              }}
-            />
+            {post.author?.avatar ? (
+              <img
+                src={post.author.avatar.startsWith('http') ? post.author.avatar : `${API_BASE_URL}${post.author.avatar.startsWith('/') ? '' : '/'}${post.author.avatar}`}
+                alt={post.author?.username}
+                className="w-10 h-10 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (post.author?.id) navigate(`/profile/${post.author.id}`);
+                }}
+                onError={(e) => {
+                  // Fallback if image fails to load during runtime
+                  e.currentTarget.style.display = 'none';
+                  const parent = e.currentTarget.parentElement;
+                  if (parent) {
+                    const fallback = document.createElement('div');
+                    fallback.className = "w-10 h-10 rounded-full bg-gradient-to-br from-primary to-rose-600 flex items-center justify-center text-white font-bold text-lg uppercase shadow-lg ring-2 ring-white/10";
+                    fallback.innerText = (post.author?.username || post.author?.name || 'U').charAt(0);
+                    parent.appendChild(fallback);
+                  }
+                }}
+              />
+            ) : (
+              <div 
+                className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-rose-600 flex items-center justify-center text-white font-bold text-lg uppercase cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all shadow-lg ring-2 ring-white/10"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (post.author?.id) navigate(`/profile/${post.author.id}`);
+                }}
+              >
+                {(post.author?.username || post.author?.name || 'U').charAt(0)}
+              </div>
+            )}
             <div>
               <p 
                 className="font-bold text-lg text-white mb-1 capitalize cursor-pointer hover:text-primary transition-colors"

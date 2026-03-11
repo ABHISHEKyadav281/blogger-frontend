@@ -1,19 +1,16 @@
 import React, { useEffect } from 'react';
-import { Bell, Check, Trash2, Clock, Sparkles } from 'lucide-react';
+import { Bell, Check, Trash2, Clock, Sparkles, ArrowLeft } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../redux/slices/hooks';
-import { fetchNotifications, markAllAsRead, clearNotifications } from '../redux/slices/notificationSlice';
+import { fetchNotifications, markNotificationAsRead } from '../redux/slices/notificationSlice';
 import { addToast } from '../redux/slices/uiSlice';
+import { useNavigate } from 'react-router-dom';
 
 const NotificationsPage: React.FC = () => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { notifications, isLoading, hasMore, page, error } = useAppSelector((state) => state.notifications);
 
-  useEffect(() => {
-    dispatch(fetchNotifications({ page: 0 }));
-    return () => {
-      dispatch(clearNotifications());
-    };
-  }, [dispatch]);
+
 
   useEffect(() => {
     if (error) {
@@ -26,28 +23,30 @@ const NotificationsPage: React.FC = () => {
     }
   }, [error, dispatch]);
 
-  const handleMarkAllRead = async () => {
-    try {
-      await dispatch(markAllAsRead()).unwrap();
-      dispatch(addToast({
-        type: 'success',
-        title: 'Success',
-        message: 'All notifications marked as read',
-        duration: 3000
-      }));
-    } catch (error: any) {
-      dispatch(addToast({
-        type: 'error',
-        title: 'Error',
-        message: error || 'Failed to mark all as read',
-        duration: 5000
-      }));
-    }
-  };
+
 
   const loadMore = () => {
     if (!isLoading && hasMore) {
       dispatch(fetchNotifications({ page: page + 1 }));
+    }
+  };
+
+  const handleNotificationClick = async (notificationId: string | number, postId?: string | number) => {
+    try {
+      // Find the notification in current state
+      const notification = notifications.find(n => n.id === notificationId);
+      
+      // Only mark as read if it's currently unread
+      if (notification && !notification.read) {
+        await dispatch(markNotificationAsRead(String(notificationId))).unwrap();
+      }
+
+      // Navigate to post if postId is available
+      if (postId) {
+        navigate(`/post/${postId}`);
+      }
+    } catch (error: any) {
+      console.error('Failed to mark notification as read:', error);
     }
   };
 
@@ -72,16 +71,16 @@ const NotificationsPage: React.FC = () => {
             <p className="text-gray-400">Stay updated with your latest interactions</p>
           </div>
         </div>
-        
-        {notifications.length > 0 && (
-          <button
-            onClick={handleMarkAllRead}
-            className="flex items-center space-x-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white rounded-xl transition-all"
-          >
-            <Check className="w-4 h-4" />
-            <span>Mark all as read</span>
-          </button>
-        )}
+
+        <button 
+          onClick={() => navigate('/')}
+          className="flex items-center space-x-2 text-gray-400 hover:text-white transition-all group"
+        >
+          <div className="p-2 bg-white/5 rounded-xl group-hover:bg-white/10 transition-all">
+            <ArrowLeft className="w-5 h-5" />
+          </div>
+          <span className="font-medium">Back to Home</span>
+        </button>
       </div>
 
       <div className="space-y-4">
@@ -98,7 +97,8 @@ const NotificationsPage: React.FC = () => {
             {notifications.map((notification) => (
               <div
                 key={notification.id}
-                className={`flex items-start space-x-4 p-4 rounded-2xl border transition-all ${
+                onClick={() => handleNotificationClick(notification.id, notification.postId)}
+                className={`flex items-start space-x-4 p-4 rounded-2xl border transition-all cursor-pointer hover:bg-white/10 ${
                   notification.read 
                     ? 'bg-transparent border-white/5 opacity-70' 
                     : 'bg-white/5 border-pink-500/20 shadow-lg shadow-pink-500/5'

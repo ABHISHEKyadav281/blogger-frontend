@@ -42,9 +42,9 @@ import {
   Ban,
   Flag,
   Link as LinkIcon,
-  Sparkles,
   Check
 } from 'lucide-react';
+import ImageModal from '../components/ui/ImageModal';
 
 // Types
 interface User {
@@ -149,10 +149,8 @@ const stripHtml = (html: string) => {
 const PostCard: React.FC<{ 
   post: Post; 
   viewMode: 'grid' | 'list';
-  onLike: (id: string) => void;
-  onBookmark: (id: string) => void;
   onView: (id: string) => void;
-}> = ({ post, viewMode, onLike, onBookmark, onView }) => {
+}> = ({ post, viewMode, onView }) => {
   if (viewMode === 'list') {
     return (
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 overflow-hidden hover:shadow-2xl transition-all duration-300 hover:transform hover:scale-[1.02] cursor-pointer"
@@ -185,25 +183,6 @@ const PostCard: React.FC<{
                   <Clock className="w-4 h-4" />
                   <span>{post.readTime}</span>
                 </span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={(e) => {e.stopPropagation(); onLike(post.id);}}
-                  className={`flex items-center space-x-1 px-2 py-1 rounded transition-all ${
-                    post.stats.isLiked ? 'text-red-400' : 'text-gray-400 hover:text-red-400'
-                  }`}
-                >
-                  <Heart className={`w-4 h-4 ${post.stats.isLiked ? 'fill-current' : ''}`} />
-                  <span>{post.stats.likes}</span>
-                </button>
-                <button
-                  onClick={(e) => {e.stopPropagation(); onBookmark(post.id);}}
-                  className={`p-1 rounded transition-all ${
-                    post.stats.isBookmarked ? 'text-yellow-400' : 'text-gray-400 hover:text-yellow-400'
-                  }`}
-                >
-                  <Bookmark className={`w-4 h-4 ${post.stats.isBookmarked ? 'fill-current' : ''}`} />
-                </button>
               </div>
             </div>
           </div>
@@ -249,25 +228,6 @@ const PostCard: React.FC<{
               <Clock className="w-3 h-3" />
               <span>{post.readTime}</span>
             </span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={(e) => {e.stopPropagation(); onLike(post.id);}}
-              className={`flex items-center space-x-1 text-xs ${
-                post.stats.isLiked ? 'text-red-400' : 'text-gray-400 hover:text-red-400'
-              }`}
-            >
-              <Heart className={`w-3 h-3 ${post.stats.isLiked ? 'fill-current' : ''}`} />
-              <span>{post.stats.likes}</span>
-            </button>
-            <button
-              onClick={(e) => {e.stopPropagation(); onBookmark(post.id);}}
-              className={`${
-                post.stats.isBookmarked ? 'text-yellow-400' : 'text-gray-400 hover:text-yellow-400'
-              }`}
-            >
-              <Bookmark className={`w-3 h-3 ${post.stats.isBookmarked ? 'fill-current' : ''}`} />
-            </button>
           </div>
         </div>
       </div>
@@ -686,11 +646,13 @@ const UserProfilePage: React.FC = () => {
 
   useEffect(() => {
     if (profileData) {
+      console.log('👤 Profile Data Received:', profileData);
+      
       const mappedUser: User = {
         id: profileData.id || userId || '',
         name: profileData.firstName && profileData.lastName 
           ? `${profileData.firstName} ${profileData.lastName}` 
-          : profileData.username,
+          : (profileData.name || profileData.username),
         username: profileData.username,
         avatar: profileData.profileImage || `https://ui-avatars.com/api/?name=${profileData.username}&background=random`,
         coverImage: profileData.coverImage || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&h=400&fit=crop',
@@ -702,10 +664,10 @@ const UserProfilePage: React.FC = () => {
         isVerified: false, // Fallback
         role: 'user', // Fallback
         stats: {
-          posts: profileData.posts,
-          followers: profileData.followers,
-          following: profileData.following,
-          likes: profileData.totalLikes
+          posts: profileData.posts ?? profileData.postCount ?? 0,
+          followers: profileData.followers ?? profileData.followerCount ?? profileData.followersCount ?? 0,
+          following: profileData.following ?? profileData.followingCount ?? 0,
+          likes: profileData.totalLikes ?? profileData.likes ?? 0
         },
         socialLinks: {}, // Fallback
         preferences: {
@@ -764,7 +726,7 @@ const UserProfilePage: React.FC = () => {
     }
   }, [profileData, profilePosts, userId]);
 
-  const categories = ['all', 'Reviews', 'Studio Analysis', 'Character Study'];
+  const categories = ['all', 'Anime Reviews', 'Manga Discussion', 'Character Analysis'];
 
   // Filter and sort posts
   const filteredPosts = posts.filter(post => {
@@ -787,47 +749,46 @@ const UserProfilePage: React.FC = () => {
 
   const handleSubscribe = async () => {
     if (userId && !isOwnProfile) {
+      // Optimistic update
+      const wasSubscribed = isSubscribed;
+      setIsSubscribed(!wasSubscribed);
+      
+      // Update follower count dynamically
+      if (user) {
+        setUser({
+          ...user,
+          stats: {
+            ...user.stats,
+            followers: wasSubscribed 
+              ? Math.max(0, user.stats.followers - 1) 
+              : user.stats.followers + 1
+          }
+        });
+      }
+
       try {
-        if (!isSubscribed) {
+        if (!wasSubscribed) {
           await api.post(`/user/action/subscribe?bloggerId=${userId}`);
-          setIsSubscribed(true);
         } else {
           await api.post(`/user/action/unsubscribe?bloggerId=${userId}`);
-          setIsSubscribed(false);
         }
       } catch (error) {
         console.error("Subscription action failed:", error);
+        // Revert on error
+        setIsSubscribed(wasSubscribed);
+        if (user) {
+          setUser({
+            ...user,
+            stats: {
+              ...user.stats,
+              followers: wasSubscribed 
+                ? user.stats.followers 
+                : Math.max(0, user.stats.followers - 1)
+            }
+          });
+        }
       }
     }
-  };
-
-  const handleLikePost = (postId: string) => {
-    setPosts(posts.map(post => 
-      post.id === postId 
-        ? {
-            ...post,
-            stats: {
-              ...post.stats,
-              isLiked: !post.stats.isLiked,
-              likes: post.stats.isLiked ? post.stats.likes - 1 : post.stats.likes + 1
-            }
-          }
-        : post
-    ));
-  };
-
-  const handleBookmarkPost = (postId: string) => {
-    setPosts(posts.map(post => 
-      post.id === postId 
-        ? {
-            ...post,
-            stats: {
-              ...post.stats,
-              isBookmarked: !post.stats.isBookmarked
-            }
-          }
-        : post
-    ));
   };
 
   const handleViewPost = (postId: string) => {
@@ -853,7 +814,7 @@ const UserProfilePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-white">
+      <div className="max-w-7xl mx-auto">
       {/* Background Effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
@@ -879,73 +840,6 @@ const UserProfilePage: React.FC = () => {
           </div>
         )}
 
-        {/* Header */}
-        <header className="sticky top-0 z-50 glass-panel border-b border-white/10">
-          <div className="max-w-7xl mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => window.history.back()}
-                className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-                <span>Back</span>
-              </button>
-              
-              <div className="flex items-center space-x-4">
-                {!isOwnProfile && (
-                  <>
-                    <button className="p-2 text-gray-400 hover:text-white transition-colors">
-                      <Bell className="w-5 h-5" />
-                    </button>
-                    <button className="p-2 text-gray-400 hover:text-white transition-colors">
-                      <Share2 className="w-5 h-5" />
-                    </button>
-                  </>
-                )}
-                
-                <div className="relative">
-                  <button
-                    onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="p-2 text-gray-400 hover:text-white transition-colors"
-                  >
-                    <MoreHorizontal className="w-5 h-5" />
-                  </button>
-                  
-                  {showUserMenu && (
-                    <div className="absolute right-0 top-full mt-2 bg-black/90 backdrop-blur-xl rounded-2xl border border-white/20 shadow-2xl py-2 min-w-48">
-                      {isOwnProfile ? (
-                        <>
-                          <button
-                            onClick={() => {setShowEditModal(true); setShowUserMenu(false);}}
-                            className="w-full flex items-center space-x-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-all"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                            <span>Edit Profile</span>
-                          </button>
-                          <button className="w-full flex items-center space-x-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-all">
-                            <Settings className="w-4 h-4" />
-                            <span>Settings</span>
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button className="w-full flex items-center space-x-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-all">
-                            <Flag className="w-4 h-4" />
-                            <span>Report User</span>
-                          </button>
-                          <button className="w-full flex items-center space-x-3 px-4 py-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all">
-                            <Ban className="w-4 h-4" />
-                            <span>Block User</span>
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
 
         {/* Profile Header */}
         <div className="max-w-7xl mx-auto px-6 py-8">
@@ -965,6 +859,56 @@ const UserProfilePage: React.FC = () => {
                 <div className="w-full h-full bg-gradient-to-r from-pink-500/20 to-violet-500/20" />
               )}
               <div className="absolute inset-0 bg-black/20" />
+              
+              {/* Profile Navigation Overlays */}
+              <div className="absolute top-[10px] left-4 right-4 z-20 flex items-center justify-between">
+                <button 
+                  onClick={() => navigate('/')}
+                  className="p-2.5 bg-black/40 backdrop-blur-md border border-white/20 rounded-2xl text-white hover:bg-black/60 transition-all group scale-100 active:scale-95"
+                >
+                  <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                </button>
+
+                <div className="relative group/menu">
+                  <button
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                    className="p-2.5 bg-black/40 backdrop-blur-md border border-white/20 rounded-2xl text-white hover:bg-black/60 transition-all scale-100 active:scale-95"
+                  >
+                    <MoreHorizontal className="w-5 h-5" />
+                  </button>
+                  
+                  {showUserMenu && (
+                    <div className="absolute right-0 top-full mt-2 bg-black/90 backdrop-blur-xl rounded-2xl border border-white/20 shadow-2xl py-2 min-w-48 z-50 animate-in fade-in zoom-in-95 duration-200">
+                      {isOwnProfile ? (
+                        <>
+                          <button
+                            onClick={() => {setShowEditModal(true); setShowUserMenu(false);}}
+                            className="w-full flex items-center space-x-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-all"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                            <span className="text-sm font-medium">Edit Profile</span>
+                          </button>
+                          <button className="w-full flex items-center space-x-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-all border-t border-white/5 mt-1 pt-3">
+                            <Settings className="w-4 h-4" />
+                            <span className="text-sm font-medium">Settings</span>
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button className="w-full flex items-center space-x-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-all">
+                            <Flag className="w-4 h-4" />
+                            <span className="text-sm font-medium">Report User</span>
+                          </button>
+                          <button className="w-full flex items-center space-x-3 px-4 py-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all border-t border-white/5 mt-1 pt-3">
+                            <Ban className="w-4 h-4" />
+                            <span className="text-sm font-medium">Block User</span>
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="p-6 md:p-8">
@@ -1245,8 +1189,6 @@ const UserProfilePage: React.FC = () => {
                         key={post.id}
                         post={post}
                         viewMode={viewMode}
-                        onLike={handleLikePost}
-                        onBookmark={handleBookmarkPost}
                         onView={handleViewPost}
                       />
                     ))}
@@ -1341,7 +1283,6 @@ const UserProfilePage: React.FC = () => {
         </div>
       </div>
 
-      {/* Edit Profile Modal */}
       <EditProfileModal
         user={user}
         isOpen={showEditModal}

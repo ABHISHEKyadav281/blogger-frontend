@@ -396,11 +396,13 @@ const SearchResultsPage: React.FC = () => {
           <div className="w-full px-4 lg:px-8 py-4">
             <div className="flex items-center space-x-6">
               <button
-                onClick={handleBack}
-                className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors"
+                onClick={() => navigate('/')}
+                className="flex items-center space-x-2 text-gray-400 hover:text-white transition-all group"
               >
-                <ArrowLeft className="w-5 h-5" />
-                <span>Back</span>
+                <div className="p-2 bg-white/5 rounded-xl group-hover:bg-white/10 transition-all border border-white/10">
+                  <ArrowLeft className="w-5 h-5" />
+                </div>
+                <span className="font-medium">Back to Home</span>
               </button>
 
               {/* Search Bar */}

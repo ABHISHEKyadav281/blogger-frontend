@@ -10,8 +10,10 @@ import {
   Clock,
   Tag,
   Share2,
+  Maximize2,
 } from "lucide-react";
 import ShareModal from "./ShareModal";
+import ImageModal from "../ui/ImageModal";
 import { useAppDispatch, useAppSelector } from "../../redux/slices/hooks";
 import {
   fetchPostById,
@@ -28,9 +30,6 @@ import {
   bookmarkPost,
 } from "../../redux/slices/postsListSlice";
 import { formatTimeAgo } from "../../utils/dateUtils";
-import {
-  selectFollowerCount,
-} from "../../redux/slices/userSubscriptionsSlice";
 import api from "../../utils/api";
 import { API_BASE_URL } from "../../config";
 import Comments from "../comments/Comments";
@@ -50,11 +49,7 @@ const BlogPostDetail: React.FC = () => {
   const { user: currentUser } = useAppSelector((state) => state.auth);
   const [showComments, setShowComments] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-
-  // Debug: Log when likesCount changes
-  useEffect(() => {
-    console.log('Component re-rendered, post.likesCount:', post?.likesCount);
-  }, [post?.likesCount]);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
   // ✅ Use data from post response instead of extra API calls
   const bloggerId = post?.author?.id;
@@ -64,11 +59,9 @@ const BlogPostDetail: React.FC = () => {
   // Fetch post and comments on mount
   useEffect(() => {
     if (postId) {
-      console.log("Fetching post details and comments for:", postId);
       dispatch(fetchPostById(postId))
         .unwrap()
         .then(() => {
-          console.log("Post loaded, now fetching like count and comments");
           dispatch(fetchPostLikeCount(postId));
           dispatch(fetchComments(postId));
         })
@@ -78,8 +71,6 @@ const BlogPostDetail: React.FC = () => {
       dispatch(clearDetailError());
     };
   }, [postId, dispatch]);
-  
-  // Subscription status is now handled directly by post data
 
   const getImageSource = () => {
     if (!post)
@@ -163,43 +154,25 @@ const BlogPostDetail: React.FC = () => {
   const handleLike = () => {
     if (post) {
       dispatch(toggleLike(post.id));
-      dispatch(likePost({ postId: post.id, isLiked: post.isLiked }))
-        .unwrap()
-        .then(res => console.log("Like success:", res))
-        .catch(err => {
-          console.error("Like failed:", err);
-          dispatch(toggleLike(post.id));
-        });
+      dispatch(likePost({ postId: post.id, isLiked: post.isLiked }));
     }
   };
 
   const handleBookmark = () => {
     if (post) {
       dispatch(toggleBookmark(post.id));
-      dispatch(bookmarkPost({ postId: post.id, isBookmarked: !!post.isBookmarked }))
-        .unwrap()
-        .then(res => console.log("Bookmark success:", res))
-        .catch(err => {
-          console.error("Bookmark failed:", err);
-          dispatch(toggleBookmark(post.id));
-        });
+      dispatch(bookmarkPost({ postId: post.id, isBookmarked: !!post.isBookmarked }));
     }
   };
 
-  // Placeholder for handleSubscribe if needed, though state is now in 'post'
   const handleSubscribe = async () => {
     if (bloggerId) {
-      // Note: Since we are using data from the 'post' object from Redux, 
-      // ideally we should have a toggle action in a slice.
-      // For now, keep the API call but realize the UI might not reflect immediately 
-      // without a re-fetch or state update.
       try {
         if (!isSubscribedFromPost) {
           await api.post(`/user/action/subscribe?bloggerId=${bloggerId}`);
         } else {
           await api.post(`/user/action/unsubscribe?bloggerId=${bloggerId}`);
         }
-        // Force re-fetch post to update the status and count
         if (postId) dispatch(fetchPostById(postId));
       } catch (err) {
         console.error("Subscription toggle failed:", err);
@@ -213,7 +186,6 @@ const BlogPostDetail: React.FC = () => {
 
   const handleAddComment = (content: string, parentId?: string) => {
     if (postId && currentUser) {
-      // Use the unified addComment thunk for both top-level and replies
       dispatch(addComment({ 
         postId, 
         content, 
@@ -225,14 +197,7 @@ const BlogPostDetail: React.FC = () => {
           avatar: currentUser.avatar || 'https://via.placeholder.com/40'
         },
         parentId: parentId || null
-      }))
-      .unwrap()
-      .then(() => {
-        console.log(parentId ? "Reply added successfully" : "Comment added successfully");
-      })
-      .catch((err) => {
-        console.error("Failed to add interaction:", err);
-      });
+      }));
     } else if (!currentUser) {
       alert("Please login to comment");
       navigate("/auth");
@@ -266,13 +231,7 @@ const BlogPostDetail: React.FC = () => {
     );
   }
 
-  if (!post) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background text-white">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary" />
-      </div>
-    );
-  }
+  if (!post) return null;
 
   return (
     <div className="min-h-screen bg-background text-white relative z-10 pt-6 pb-24 lg:pb-6">
@@ -284,181 +243,212 @@ const BlogPostDetail: React.FC = () => {
         />
       </div>
 
-      <button
-        onClick={() => navigate(-1)}
-        className="flex items-center space-x-2 text-gray-400 hover:text-white ml-4 transition-all duration-300 hover:transform hover:translate-x-1"
-      >
-        <ArrowLeft className="w-5 h-5" />
-        <span>Back to posts</span>
-      </button>
-
-      <article className="max-w-7xl mx-auto glass-panel rounded-2xl md:rounded-3xl border border-white/20 overflow-hidden mt-4 md:mt-6 p-4 md:p-8 lg:mx-auto mx-4 shadow-2xl">
-        <div className="relative h-64 md:h-96 overflow-hidden rounded-t-3xl">
+      <article className="max-w-7xl mx-auto glass-panel rounded-2xl md:rounded-3xl border border-white/20 overflow-hidden mt-4 md:mt-6 shadow-2xl mx-4 mb-20 lg:mb-6">
+        {/* Post Cover Image */}
+        <div className="relative h-64 md:h-96 w-full overflow-hidden">
           <img
             src={getImageSource()}
-            alt={post.title || "Post Image"}
+            alt={post.title}
             className="w-full h-full object-cover"
             onError={(e) => {
-              e.currentTarget.src =
-                "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&h=600&fit=crop";
+              e.currentTarget.src = "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&h=600&fit=crop";
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
-            <span className="px-3 py-1 bg-primary/80 text-white text-sm font-medium rounded-full backdrop-blur-sm">
+          
+          {/* Navigation Overlay */}
+          <div className="absolute top-4 left-4 z-20">
+            <button 
+              onClick={() => navigate('/')}
+              className="p-2.5 bg-black/40 backdrop-blur-md border border-white/20 rounded-full text-white hover:bg-black/60 transition-all group active:scale-95"
+              title="Back"
+            >
+              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
+            </button>
+          </div>
+ 
+          <div className="absolute top-4 right-4 z-20">
+            <button 
+              onClick={() => setIsImageModalOpen(true)}
+              className="p-2.5 bg-black/40 backdrop-blur-md border border-white/20 rounded-full text-white hover:bg-black/60 transition-all active:scale-95"
+              title="Full View"
+            >
+              <Maximize2 className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+          
+          <div className="absolute bottom-6 left-6 right-6 z-20">
+            <span className="px-3 py-1 bg-primary/80 text-white text-xs font-medium rounded-full backdrop-blur-sm">
               {post.category || "Uncategorized"}
             </span>
-            <div className="flex items-center space-x-4 text-gray-300 text-sm mt-2">
-              <span className="flex items-center space-x-1">
+            <h1 className="text-3xl md:text-5xl font-bold text-white mt-3 leading-tight">
+              {post.title}
+            </h1>
+            <div className="flex flex-wrap items-center gap-4 mt-4 text-gray-300 text-sm">
+              <span className="flex items-center space-x-1.5 text-white/90">
                 <Calendar className="w-4 h-4" />
                 <span>{formatTimeAgo(post.createdAt)}</span>
               </span>
-              <span className="flex items-center space-x-1">
+              <span className="flex items-center space-x-1.5">
                 <Clock className="w-4 h-4" />
                 <span>{post.readTime || "5 min read"}</span>
               </span>
-              <span className="flex items-center space-x-1">
+              <span className="flex items-center space-x-1.5">
                 <Eye className="w-4 h-4" />
-                <span>{(post.stats?.views || 0).toLocaleString()} views</span>
+                <span>{(post?.viewsCount || 0).toLocaleString()} views</span>
               </span>
             </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-white mt-4">
-              {post.title || "Untitled Post"}
-            </h1>
           </div>
         </div>
 
-        <div className="flex items-center justify-between py-4 border-b border-white/10 mt-4">
-          <div className="flex items-center space-x-4">
-            <img
-              src={post.author?.avatar || "https://via.placeholder.com/150"}
-              alt={post.author?.name || "Author"}
-              className="w-14 h-14 rounded-full border-2 border-white/20 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
-              onClick={() => {
-                const id = post.author?.id;
-                if (id) navigate(`/profile/${id}`);
-              }}
-            />
-            <div>
-              <h3 
-                className="font-semibold text-white text-lg cursor-pointer hover:text-primary transition-colors"
-                onClick={() => {
-                  const id = post.author?.id;
-                  if (id) navigate(`/profile/${id}`);
-                }}
-              >
-                {post.author?.username || "Unknown Author"}
-              </h3>
-              <p className="text-gray-400 text-sm">
-                {followerCountFromPost.toLocaleString()} followers
-              </p>
-              {post.author?.bio && (
-                <p className="text-gray-300 text-sm">{post.author.bio}</p>
+        <div className="p-6 md:p-10">
+          {/* Author Section */}
+          <div className="flex items-center justify-between pb-8 border-b border-white/10 mb-8">
+            <div className="flex items-center space-x-4">
+              {post.author?.avatar ? (
+                <img
+                  src={post.author.avatar.startsWith('http') ? post.author.avatar : `${API_BASE_URL}${post.author.avatar.startsWith('/') ? '' : '/'}${post.author.avatar}`}
+                  alt={post.author?.name || "Author"}
+                  className="w-14 h-14 rounded-full border-2 border-white/20 object-cover cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all shadow-xl"
+                  onClick={() => navigate(`/profile/${post.author?.id}`)}
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    const parent = e.currentTarget.parentElement;
+                    if (parent) {
+                      const fallback = document.createElement('div');
+                      fallback.className = "w-14 h-14 rounded-full bg-gradient-to-br from-primary to-rose-600 flex items-center justify-center text-white font-bold text-2xl uppercase border-2 border-white/20 shadow-xl";
+                      fallback.innerText = (post.author?.username || post.author?.name || 'U').charAt(0);
+                      parent.appendChild(fallback);
+                    }
+                  }}
+                />
+              ) : (
+                <div 
+                  className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-rose-600 flex items-center justify-center text-white font-bold text-2xl uppercase border-2 border-white/20 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all shadow-xl"
+                  onClick={() => navigate(`/profile/${post.author?.id}`)}
+                >
+                  {(post.author?.username || post.author?.name || 'U').charAt(0)}
+                </div>
               )}
+              <div>
+                <h3 
+                  className="font-bold text-white text-lg cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => navigate(`/profile/${post.author?.id}`)}
+                >
+                  {post.author?.username || "Unknown Author"}
+                </h3>
+                <p className="text-gray-400 text-sm">
+                  {followerCountFromPost.toLocaleString()} followers
+                </p>
+              </div>
             </div>
+            <button
+              onClick={handleSubscribe}
+              disabled={!bloggerId}
+              className={`px-6 py-2.5 rounded-full font-semibold transition-all duration-300 ${
+                isSubscribedFromPost
+                  ? "bg-white/10 text-white border border-white/20 hover:bg-white/20"
+                  : "bg-primary text-white hover:bg-rose-600 shadow-lg shadow-primary/20"
+              } disabled:opacity-50`}
+            >
+              {isSubscribedFromPost ? "Subscribed" : "Subscribe"}
+            </button>
           </div>
-          <button
-            onClick={handleSubscribe}
-            disabled={!bloggerId}
-            className={`px-6 py-3 rounded-full font-medium transition-all duration-300 ${
-              isSubscribedFromPost
-                ? "bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30"
-                : "bg-primary text-white hover:bg-rose-600 hover:shadow-lg hover:scale-105"
-            } disabled:opacity-50 disabled:cursor-not-allowed`}
-          >
-            {isSubscribedFromPost ? "Subscribed ✓" : "Subscribe"}
-          </button>
-        </div>
 
-        <div className="prose prose-invert max-w-none my-6 text-gray-300">
-          {post.content ? (
-            formatContent(post.content)
-          ) : (
-            <p>No content available.</p>
+          {/* Content */}
+          <div className="prose prose-invert prose-rose max-w-none text-gray-200 text-lg leading-relaxed">
+            {post.content ? formatContent(post.content) : <p>No content available.</p>}
+          </div>
+
+          {/* Tags */}
+          {post.tags && post.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-8">
+              {post.tags.map((tag, i) => (
+                <button
+                  key={i}
+                  className="px-4 py-1.5 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white text-sm rounded-xl border border-white/10 transition-colors flex items-center space-x-2"
+                >
+                  <Tag className="w-3.5 h-3.5" />
+                  <span>{tag}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Interaction Bar */}
+          <div className="flex items-center justify-between mt-10 pt-6 border-t border-white/10">
+            <div className="flex items-center space-x-6">
+              <button
+                onClick={handleLike}
+                className={`flex items-center space-x-2 transition-all group ${
+                  post.isLiked ? "text-primary scale-110" : "text-gray-400 hover:text-primary"
+                }`}
+              >
+                <div className={`p-2.5 rounded-xl ${post.isLiked ? "bg-primary/20" : "bg-white/5 group-hover:bg-primary/10"} transition-colors`}>
+                  <Heart className={`w-5 h-5 ${post.isLiked ? "fill-current" : ""}`} />
+                </div>
+                <span className="font-medium">{post.likesCount || 0}</span>
+              </button>
+              
+              <button
+                onClick={() => setShowComments(!showComments)}
+                className={`flex items-center space-x-2 transition-all group ${
+                  showComments ? "text-primary" : "text-gray-400 hover:text-primary"
+                }`}
+              >
+                <div className={`p-2.5 rounded-xl ${showComments ? "bg-primary/20" : "bg-white/5 group-hover:bg-primary/10"} transition-colors`}>
+                  <MessageCircle className={`w-5 h-5 ${showComments ? "fill-current" : ""}`} />
+                </div>
+                <span className="font-medium">{post.commentsCount || 0}</span>
+              </button>
+
+              <button
+                onClick={handleShareClick}
+                className="flex items-center space-x-2 text-gray-400 hover:text-green-400 transition-all group"
+              >
+                <div className="p-2.5 rounded-xl bg-white/5 group-hover:bg-green-500/10 transition-colors">
+                  <Share2 className="w-5 h-5" />
+                </div>
+                <span className="font-medium">Share</span>
+              </button>
+            </div>
+
+            <button
+              onClick={handleBookmark}
+              className={`transition-all group ${
+                post.isBookmarked ? "text-yellow-400 scale-110" : "text-gray-400 hover:text-yellow-400"
+              }`}
+            >
+              <div className={`p-2.5 rounded-xl ${post.isBookmarked ? "bg-yellow-500/20" : "bg-white/5 group-hover:bg-yellow-500/10"} transition-colors`}>
+                <Bookmark className={`w-5 h-5 ${post.isBookmarked ? "fill-current" : ""}`} />
+              </div>
+            </button>
+          </div>
+
+          {/* Comments Section */}
+          {showComments && (
+            <div className="mt-8 pt-8 border-t border-white/10 animate-in fade-in slide-in-from-top-4 duration-500">
+              <Comments
+                postId={postId || ""}
+                currentUser={{
+                  id: currentUser?.id?.toString() || "guest",
+                  name: currentUser?.username || "Guest",
+                  username: currentUser?.username || "guest",
+                  avatar: currentUser?.avatar || "https://via.placeholder.com/40",
+                  role: currentUser?.role
+                }}
+                comments={comments} 
+                onAddComment={handleAddComment}
+                onEditComment={() => {}}
+                onDeleteComment={() => {}}
+                onLikeComment={() => {}}
+                onDislikeComment={() => {}}
+                onFetchReplies={handleFetchReplies}
+              />
+            </div>
           )}
         </div>
-
-        {post.tags && post.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4">
-            {post.tags.map((tag, i) => (
-              <button
-                key={i}
-                className="px-3 py-1 bg-white/10 text-gray-400 text-xs rounded-full flex items-center space-x-1"
-              >
-                <Tag className="w-3 h-3" />
-                <span>{tag}</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div className="flex items-center justify-between py-4 border-t border-b border-white/10">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={handleLike}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-all duration-300 ${
-                post.isLiked
-                  ? "text-primary bg-primary/20 hover:bg-primary/30"
-                  : "text-gray-400 hover:text-primary hover:bg-primary/10"
-              }`}
-            >
-              <Heart className={`w-5 h-5 ${post.isLiked ? "fill-current" : ""}`} />
-              <span>{post.likesCount || 0}</span>
-            </button>
-            
-            <button
-              onClick={() => setShowComments(!showComments)}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-all duration-300 ${
-                showComments
-                  ? "text-primary bg-primary/20 hover:bg-primary/30 border border-primary/20"
-                  : "text-gray-400 hover:text-primary hover:bg-primary/10"
-              }`}
-            >
-              <MessageCircle className={`w-5 h-5 ${showComments ? "fill-current" : ""}`} />
-              <span>{post.commentsCount || 0}</span>
-            </button>
-
-            <button
-              onClick={handleShareClick}
-              className="flex items-center space-x-2 px-4 py-2 rounded-full text-gray-400 hover:text-green-400 hover:bg-green-500/10 transition-all duration-300"
-            >
-              <Share2 className="w-5 h-5" />
-              <span>Share</span>
-            </button>
-          </div>
-          <button
-            onClick={handleBookmark}
-            className={`p-2 rounded-full transition-all duration-300 ${
-              post.isBookmarked
-                ? "text-yellow-400 bg-yellow-500/20 hover:bg-yellow-500/30"
-                : "text-gray-400 hover:text-yellow-400 hover:bg-yellow-500/10"
-            }`}
-          >
-            <Bookmark className={`w-5 h-5 ${post.isBookmarked ? "fill-current" : ""}`} />
-          </button>
-        </div>
-
-        {showComments && (
-          <div className="mt-8 transition-all duration-500 animate-in fade-in slide-in-from-top-4">
-            <Comments
-              postId={postId || ""}
-              currentUser={{
-                id: currentUser?.id?.toString() || "guest",
-                name: currentUser?.username || "Guest",
-                username: currentUser?.username || "guest",
-                avatar: currentUser?.avatar || "https://via.placeholder.com/40",
-                role: currentUser?.role
-              }}
-              comments={comments} 
-              onAddComment={handleAddComment}
-              onEditComment={() => {}}
-              onDeleteComment={() => {}}
-              onLikeComment={() => {}}
-              onDislikeComment={() => {}}
-              onFetchReplies={handleFetchReplies}
-            />
-          </div>
-        )}
       </article>
 
       <ShareModal
@@ -466,6 +456,13 @@ const BlogPostDetail: React.FC = () => {
         onClose={() => setIsShareModalOpen(false)}
         url={window.location.href}
         title={post?.title || ""}
+      />
+
+      <ImageModal
+        isOpen={isImageModalOpen}
+        onClose={() => setIsImageModalOpen(false)}
+        src={getImageSource()}
+        alt={post.title || "Post Image"}
       />
     </div>
   );
