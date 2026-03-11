@@ -32,8 +32,8 @@ export interface BlogPost {
   stats: {
     likes: number;
     comments: number;
-    views: number;
   };
+  viewsCount: number;
   isBookmarked: boolean;
   isLiked: boolean;
   isDisliked: boolean;

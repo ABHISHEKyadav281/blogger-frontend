@@ -167,7 +167,7 @@ const BlogPreviewCard: React.FC<BlogPreviewCardProps> = ({ post }) => {
           </div>
           <div className="flex flex-col items-end justify-center">
             <div className="flex items-center space-x-1 text-gray-400">
-              <span className="text-xs font-medium">{post.stats?.views}</span>
+              <span className="text-xs font-medium">{post.viewsCount}</span>
               <Eye className="w-4 h-4" />
             </div>
           </div>
