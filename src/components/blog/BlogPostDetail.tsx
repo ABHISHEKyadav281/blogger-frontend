@@ -296,7 +296,7 @@ const BlogPostDetail: React.FC = () => {
               </span>
               <span className="flex items-center space-x-1.5">
                 <Eye className="w-4 h-4" />
-                <span>{(post.stats?.views || 0).toLocaleString()} views</span>
+                <span>{(post?.viewsCount || 0).toLocaleString()} views</span>
               </span>
             </div>
           </div>
