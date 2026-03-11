@@ -418,7 +418,6 @@ const Header: React.FC = () => {
                       alt={user.name}
                       className="w-8 h-8 rounded-full border-2 border-white/20"
                     />
-                    <ChevronDown className="w-4 h-4" />
                   </button>
 
                   {showProfileMenu && (

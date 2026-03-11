@@ -149,10 +149,8 @@ const stripHtml = (html: string) => {
 const PostCard: React.FC<{ 
   post: Post; 
   viewMode: 'grid' | 'list';
-  onLike: (id: string) => void;
-  onBookmark: (id: string) => void;
   onView: (id: string) => void;
-}> = ({ post, viewMode, onLike, onBookmark, onView }) => {
+}> = ({ post, viewMode, onView }) => {
   if (viewMode === 'list') {
     return (
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 overflow-hidden hover:shadow-2xl transition-all duration-300 hover:transform hover:scale-[1.02] cursor-pointer"
@@ -185,25 +183,6 @@ const PostCard: React.FC<{
                   <Clock className="w-4 h-4" />
                   <span>{post.readTime}</span>
                 </span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={(e) => {e.stopPropagation(); onLike(post.id);}}
-                  className={`flex items-center space-x-1 px-2 py-1 rounded transition-all ${
-                    post.stats.isLiked ? 'text-red-400' : 'text-gray-400 hover:text-red-400'
-                  }`}
-                >
-                  <Heart className={`w-4 h-4 ${post.stats.isLiked ? 'fill-current' : ''}`} />
-                  <span>{post.stats.likes}</span>
-                </button>
-                <button
-                  onClick={(e) => {e.stopPropagation(); onBookmark(post.id);}}
-                  className={`p-1 rounded transition-all ${
-                    post.stats.isBookmarked ? 'text-yellow-400' : 'text-gray-400 hover:text-yellow-400'
-                  }`}
-                >
-                  <Bookmark className={`w-4 h-4 ${post.stats.isBookmarked ? 'fill-current' : ''}`} />
-                </button>
               </div>
             </div>
           </div>
@@ -249,25 +228,6 @@ const PostCard: React.FC<{
               <Clock className="w-3 h-3" />
               <span>{post.readTime}</span>
             </span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={(e) => {e.stopPropagation(); onLike(post.id);}}
-              className={`flex items-center space-x-1 text-xs ${
-                post.stats.isLiked ? 'text-red-400' : 'text-gray-400 hover:text-red-400'
-              }`}
-            >
-              <Heart className={`w-3 h-3 ${post.stats.isLiked ? 'fill-current' : ''}`} />
-              <span>{post.stats.likes}</span>
-            </button>
-            <button
-              onClick={(e) => {e.stopPropagation(); onBookmark(post.id);}}
-              className={`${
-                post.stats.isBookmarked ? 'text-yellow-400' : 'text-gray-400 hover:text-yellow-400'
-              }`}
-            >
-              <Bookmark className={`w-3 h-3 ${post.stats.isBookmarked ? 'fill-current' : ''}`} />
-            </button>
           </div>
         </div>
       </div>
@@ -686,11 +646,13 @@ const UserProfilePage: React.FC = () => {
 
   useEffect(() => {
     if (profileData) {
+      console.log('👤 Profile Data Received:', profileData);
+      
       const mappedUser: User = {
         id: profileData.id || userId || '',
         name: profileData.firstName && profileData.lastName 
           ? `${profileData.firstName} ${profileData.lastName}` 
-          : profileData.username,
+          : (profileData.name || profileData.username),
         username: profileData.username,
         avatar: profileData.profileImage || `https://ui-avatars.com/api/?name=${profileData.username}&background=random`,
         coverImage: profileData.coverImage || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&h=400&fit=crop',
@@ -702,10 +664,10 @@ const UserProfilePage: React.FC = () => {
         isVerified: false, // Fallback
         role: 'user', // Fallback
         stats: {
-          posts: profileData.posts,
-          followers: profileData.followers,
-          following: profileData.following,
-          likes: profileData.totalLikes
+          posts: profileData.posts ?? profileData.postCount ?? 0,
+          followers: profileData.followers ?? profileData.followerCount ?? profileData.followersCount ?? 0,
+          following: profileData.following ?? profileData.followingCount ?? 0,
+          likes: profileData.totalLikes ?? profileData.likes ?? 0
         },
         socialLinks: {}, // Fallback
         preferences: {
@@ -764,7 +726,7 @@ const UserProfilePage: React.FC = () => {
     }
   }, [profileData, profilePosts, userId]);
 
-  const categories = ['all', 'Reviews', 'Studio Analysis', 'Character Study'];
+  const categories = ['all', 'Anime Reviews', 'Manga Discussion', 'Character Analysis'];
 
   // Filter and sort posts
   const filteredPosts = posts.filter(post => {
@@ -787,47 +749,46 @@ const UserProfilePage: React.FC = () => {
 
   const handleSubscribe = async () => {
     if (userId && !isOwnProfile) {
+      // Optimistic update
+      const wasSubscribed = isSubscribed;
+      setIsSubscribed(!wasSubscribed);
+      
+      // Update follower count dynamically
+      if (user) {
+        setUser({
+          ...user,
+          stats: {
+            ...user.stats,
+            followers: wasSubscribed 
+              ? Math.max(0, user.stats.followers - 1) 
+              : user.stats.followers + 1
+          }
+        });
+      }
+
       try {
-        if (!isSubscribed) {
+        if (!wasSubscribed) {
           await api.post(`/user/action/subscribe?bloggerId=${userId}`);
-          setIsSubscribed(true);
         } else {
           await api.post(`/user/action/unsubscribe?bloggerId=${userId}`);
-          setIsSubscribed(false);
         }
       } catch (error) {
         console.error("Subscription action failed:", error);
+        // Revert on error
+        setIsSubscribed(wasSubscribed);
+        if (user) {
+          setUser({
+            ...user,
+            stats: {
+              ...user.stats,
+              followers: wasSubscribed 
+                ? user.stats.followers 
+                : Math.max(0, user.stats.followers - 1)
+            }
+          });
+        }
       }
     }
-  };
-
-  const handleLikePost = (postId: string) => {
-    setPosts(posts.map(post => 
-      post.id === postId 
-        ? {
-            ...post,
-            stats: {
-              ...post.stats,
-              isLiked: !post.stats.isLiked,
-              likes: post.stats.isLiked ? post.stats.likes - 1 : post.stats.likes + 1
-            }
-          }
-        : post
-    ));
-  };
-
-  const handleBookmarkPost = (postId: string) => {
-    setPosts(posts.map(post => 
-      post.id === postId 
-        ? {
-            ...post,
-            stats: {
-              ...post.stats,
-              isBookmarked: !post.stats.isBookmarked
-            }
-          }
-        : post
-    ));
   };
 
   const handleViewPost = (postId: string) => {
@@ -1228,8 +1189,6 @@ const UserProfilePage: React.FC = () => {
                         key={post.id}
                         post={post}
                         viewMode={viewMode}
-                        onLike={handleLikePost}
-                        onBookmark={handleBookmarkPost}
                         onView={handleViewPost}
                       />
                     ))}

@@ -306,12 +306,31 @@ const BlogPostDetail: React.FC = () => {
           {/* Author Section */}
           <div className="flex items-center justify-between pb-8 border-b border-white/10 mb-8">
             <div className="flex items-center space-x-4">
-              <img
-                src={post.author?.avatar || "https://via.placeholder.com/150"}
-                alt={post.author?.name || "Author"}
-                className="w-14 h-14 rounded-full border-2 border-white/20 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
-                onClick={() => navigate(`/profile/${post.author?.id}`)}
-              />
+              {post.author?.avatar ? (
+                <img
+                  src={post.author.avatar.startsWith('http') ? post.author.avatar : `${API_BASE_URL}${post.author.avatar.startsWith('/') ? '' : '/'}${post.author.avatar}`}
+                  alt={post.author?.name || "Author"}
+                  className="w-14 h-14 rounded-full border-2 border-white/20 object-cover cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all shadow-xl"
+                  onClick={() => navigate(`/profile/${post.author?.id}`)}
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    const parent = e.currentTarget.parentElement;
+                    if (parent) {
+                      const fallback = document.createElement('div');
+                      fallback.className = "w-14 h-14 rounded-full bg-gradient-to-br from-primary to-rose-600 flex items-center justify-center text-white font-bold text-2xl uppercase border-2 border-white/20 shadow-xl";
+                      fallback.innerText = (post.author?.username || post.author?.name || 'U').charAt(0);
+                      parent.appendChild(fallback);
+                    }
+                  }}
+                />
+              ) : (
+                <div 
+                  className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-rose-600 flex items-center justify-center text-white font-bold text-2xl uppercase border-2 border-white/20 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all shadow-xl"
+                  onClick={() => navigate(`/profile/${post.author?.id}`)}
+                >
+                  {(post.author?.username || post.author?.name || 'U').charAt(0)}
+                </div>
+              )}
               <div>
                 <h3 
                   className="font-bold text-white text-lg cursor-pointer hover:text-primary transition-colors"

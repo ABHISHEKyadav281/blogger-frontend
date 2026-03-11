@@ -8,13 +8,19 @@ export interface UserProfileData {
     email: string;
     firstName: string | null;
     lastName: string | null;
+    name?: string; // Potential combined name
     bio: string | null;
     location: string | null;
     website: string | null;
     followers: number;
+    followerCount?: number; // Potential field name
+    followersCount?: number; // Potential field name
     following: number;
+    followingCount?: number; // Potential field name
     posts: number;
+    postCount?: number; // Potential field name
     totalLikes: number;
+    likes?: number; // Potential field name
     coverImage: string | null;
 }
 
@@ -41,6 +47,7 @@ export const fetchUserDetails = createAsyncThunk(
     async (userId: string, { rejectWithValue }) => {
         try {
             const response = await api.get(`/user/details/?bloggerId=${userId}`);
+            console.log('📡 User Details Response:', response);
             if (response && response.data) {
                 return response.data as UserProfileData;
             }
