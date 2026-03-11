@@ -167,7 +167,7 @@ const postDetailSlice = createSlice({
 
         builder.addCase(incrementViews, (state, action) => {
             if (state.currentPost && state.currentPost.id === action.payload) {
-                state.currentPost.stats.views += 1;
+                state.currentPost.viewsCount += 1;
             }
         });
 

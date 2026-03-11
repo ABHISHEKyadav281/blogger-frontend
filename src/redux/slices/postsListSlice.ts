@@ -272,7 +272,7 @@ const postsListSlice = createSlice({
             const postId = action.payload;
             const updateViews = (post: BlogPost) => {
                 if (post.id === postId) {
-                    post.stats.views += 1;
+                    post.viewsCount += 1;
                 }
             };
             state.posts.forEach(updateViews);
