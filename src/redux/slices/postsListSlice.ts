@@ -65,7 +65,7 @@ export const fetchPosts = createAsyncThunk(
             if (featured !== null) params.featured = featured;
             if (search) params.search = search;
 
-            const response = await api.get('/post/v1/allposts', { params });
+            const response = await api.get('/post/v1/feed', { params });
             console.log('📡 Full API Response:', response);
             const resAny = response as any;
             console.log('📡 Response Keys:', Object.keys(response));
