@@ -21,7 +21,7 @@ import {
   TrendingUp,
   Users
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../redux/slices/hooks';
 import { logout } from '../../redux/slices/authSlice';
 import { setFilters } from '../../redux/slices/postsListSlice';
@@ -37,11 +37,16 @@ const MobileSearch: React.FC<{
   isOpen: boolean;
   onClose: () => void;
 }> = ({ isOpen, onClose }) => {
-  const [query, setQuery] = useState('');
+  const filters = useAppSelector((state) => state.postsList.filters);
+  const [query, setQuery] = useState(filters.search || '');
   const [recentSearches] = useState(['Attack on Titan', 'Studio Ghibli', 'One Piece']);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    setQuery(filters.search || '');
+  }, [filters.search]);
 
   useEffect(() => {
     if (isOpen && inputRef.current) {
@@ -81,48 +86,6 @@ const MobileSearch: React.FC<{
             </div>
           </div>
 
-          {/* Recent Searches */}
-          {!query && recentSearches.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-white font-medium mb-3 flex items-center space-x-2">
-                <Clock className="w-4 h-4" />
-                <span>Recent Searches</span>
-              </h3>
-              <div className="space-y-2">
-                {recentSearches.map((search, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleSearch(search)}
-                    className="w-full text-left p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all flex items-center justify-between"
-                  >
-                    <span className="text-gray-300">{search}</span>
-                    <ArrowRight className="w-4 h-4 text-gray-500" />
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Trending Topics */}
-          {!query && (
-            <div className="mt-6">
-              <h3 className="text-white font-medium mb-3 flex items-center space-x-2">
-                <TrendingUp className="w-4 h-4" />
-                <span>Trending Now</span>
-              </h3>
-              <div className="space-y-2">
-                {['Attack on Titan finale', 'Studio MAPPA news', 'One Piece 1000'].map((trend, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleSearch(trend)}
-                    className="w-full text-left p-3 bg-gradient-to-r from-pink-500/10 to-violet-500/10 hover:from-pink-500/20 hover:to-violet-500/20 border border-pink-500/20 rounded-xl transition-all flex items-center justify-between"
-                  >
-                    <span className="text-pink-300">{trend}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
@@ -140,6 +103,9 @@ const MobileMenu: React.FC<{
   const { unreadCount } = useAppSelector((state) => state.notifications);
 
   const handleNavigate = (path: string) => {
+    if (path === '/') {
+      dispatch(setFilters({ search: '' }));
+    }
     navigate(path);
     onClose();
   };
@@ -235,16 +201,6 @@ const MobileMenu: React.FC<{
 
           </div>
 
-          {/* Logout */}
-          <div className="pt-4 border-t border-white/10">
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center space-x-3 p-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-all"
-            >
-              <LogOut className="w-5 h-5" />
-              <span className="font-medium">Sign Out</span>
-            </button>
-          </div>
         </div>
       </div>
     </div>
@@ -252,8 +208,13 @@ const MobileMenu: React.FC<{
 };
 
 // Main Header Component
-const Header: React.FC = () => {
+interface HeaderProps {
+  showTopNav?: boolean;
+}
+
+const Header: React.FC<HeaderProps> = ({ showTopNav = true }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useAppDispatch();
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
   const filters = useAppSelector((state) => state.postsList.filters);
@@ -295,6 +256,9 @@ const Header: React.FC = () => {
   };
 
   const handleNavigate = (path: string) => {
+    if (path === '/') {
+      dispatch(setFilters({ search: '' }));
+    }
     navigate(path);
     setShowProfileMenu(false);
     setShowNotifications(false);
@@ -317,8 +281,9 @@ const Header: React.FC = () => {
 
   return (
     <>
-      <header className="sticky top-0 z-40 glass-panel border-b border-white/10">
-        <div className="px-4 sm:px-6">
+      {showTopNav && (
+        <header className="sticky top-0 z-40 glass-panel border-b border-white/10">
+          <div className="px-4 sm:px-6">
           {/* Mobile Header */}
           <div className="flex items-center justify-between h-16 lg:hidden">
             <button 
@@ -328,7 +293,7 @@ const Header: React.FC = () => {
               <Menu className="w-6 h-6" />
             </button>
 
-            <div className="flex items-center space-x-2" onClick={() => navigate('/')}>
+            <div className="flex items-center space-x-2 cursor-pointer" onClick={() => handleNavigate('/')}>
               <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
@@ -356,21 +321,13 @@ const Header: React.FC = () => {
                   </span>
                 )}
               </button>
-              
-              <button 
-                onClick={handleLogout}
-                className="md:hidden p-2 text-red-400 hover:text-red-300 transition-colors"
-                title="Sign Out"
-              >
-                <LogOut className="w-5 h-5" />
-              </button>
             </div>
           </div>
 
           {/* Desktop Header */}
           <div className="hidden lg:flex items-center justify-between h-16">
             <div className="flex items-center space-x-8">
-              <div className="flex items-center space-x-2 cursor-pointer" onClick={() => navigate('/')}>
+              <div className="flex items-center space-x-2 cursor-pointer" onClick={() => handleNavigate('/')}>
                 <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
                   <Sparkles className="w-6 h-6 text-white" />
                 </div>
@@ -387,7 +344,7 @@ const Header: React.FC = () => {
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search title..."
+                  placeholder="Search anime, users, or topics..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-12 pr-4 py-3 bg-white/10 border border-white/20 rounded-full text-white placeholder-gray-400 focus:outline-none focus:border-pink-400 focus:bg-white/15 transition-all duration-300"
@@ -460,8 +417,9 @@ const Header: React.FC = () => {
           </div>
         </div>
       </header>
+      )}
 
-      <MobileMenu isOpen={showMobileMenu} onClose={() => setShowMobileMenu(false)} />
+      {showTopNav && <MobileMenu isOpen={showMobileMenu} onClose={() => setShowMobileMenu(false)} />}
       <MobileSearch isOpen={showMobileSearch} onClose={() => setShowMobileSearch(false)} />
 
       {/* Bottom Tab Bar (Mobile Only) */}
@@ -469,11 +427,11 @@ const Header: React.FC = () => {
         <div className="bg-black/95 backdrop-blur-xl border-t border-white/20 px-4 py-2">
           <div className="flex items-center justify-around">
             {[
-              { icon: Home, label: 'Home', path: '/', active: true },
-              { icon: Search, label: 'Search', action: () => setShowMobileSearch(true) },
-              { icon: PenTool, label: 'Create', path: '/createPost', special: true },
-              { icon: Bookmark, label: 'Saved', path: '/bookmarks' },
-              { icon: User, label: 'Profile', path: '/profile' }
+              { icon: Home, label: 'Home', action: () => handleNavigate('/'), active: location.pathname === '/' || location.pathname === '/home' },
+              { icon: Search, label: 'Search', action: () => setShowMobileSearch(true), active: showMobileSearch },
+              { icon: PenTool, label: 'Create', path: '/createPost', special: true, active: location.pathname === '/createPost' },
+              { icon: Bookmark, label: 'Saved', path: '/bookmarks', active: location.pathname === '/bookmarks' },
+              { icon: User, label: 'Profile', path: '/profile', active: location.pathname === '/profile' }
             ].map((item, idx) => (
               <button
                 key={idx}

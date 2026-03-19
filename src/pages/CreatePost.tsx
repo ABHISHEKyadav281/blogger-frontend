@@ -223,8 +223,8 @@ const CreatePost: React.FC = () => {
       <div className="relative z-10">
         <header className="sticky top-0 z-50 glass-panel border-b border-white/10">
           <div className="w-full px-4 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-6">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 md:gap-0">
+              <div className="hidden md:flex items-center space-x-6">
                 <button onClick={() => hasUnsavedChanges ? setShowExitModal(true) : window.history.back()}
                   className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors">
                   <ArrowLeft className="w-5 h-5" />
@@ -242,36 +242,40 @@ const CreatePost: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2 text-sm">
+              <div className="flex items-center justify-between w-full md:w-auto md:space-x-4">
+                <div className="hidden md:flex items-center space-x-2 text-sm">
                   <div className={`w-2 h-2 rounded-full ${saving ? 'bg-yellow-400' : publishing ? 'bg-green-400' : hasUnsavedChanges ? 'bg-orange-400' : 'bg-gray-400'}`} />
                   <span className="text-gray-400">
                     {saving ? 'Saving...' : publishing ? 'Publishing...' : hasUnsavedChanges ? 'Unsaved changes' : 'All changes saved'}
                   </span>
                 </div>
 
-                <button onClick={() => handleSave('DRAFT')} disabled={saving || publishing || !hasUnsavedChanges}
-                  className="flex items-center space-x-2 px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                  <Save className="w-4 h-4" />
-                  <span>{saving ? 'Saving...' : 'Save Draft'}</span>
-                </button>
+                <div className="flex items-center space-x-2 md:space-x-4 w-full md:w-auto">
+                  {/* 
+                  <button onClick={() => handleSave('DRAFT')} disabled={saving || publishing || !hasUnsavedChanges}
+                    className="flex-1 md:flex-none flex items-center justify-center space-x-2 px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium">
+                    <Save className="w-4 h-4" />
+                    <span>{saving ? 'Saving' : 'Save'}</span>
+                  </button>
+                  */}
 
-                <button onClick={() => handleSave('PUBLISHED')} disabled={!isFormValid || saving || publishing}
-                  className="flex items-center space-x-2 px-6 py-2 bg-primary text-white font-medium rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                  <Send className="w-4 h-4" />
-                  <span>{publishing ? 'Publishing...' : 'Publish'}</span>
-                </button>
+                  <button onClick={() => handleSave('PUBLISHED')} disabled={!isFormValid || saving || publishing}
+                    className="flex-1 md:flex-none flex items-center justify-center space-x-2 px-6 py-2 bg-primary text-white font-medium rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm">
+                    <Send className="w-4 h-4" />
+                    <span>{publishing ? 'Publishing' : 'Publish'}</span>
+                  </button>
+                </div>
               </div>
             </div>
             
-            <div className="flex space-x-1 mt-4 bg-white/5 rounded-xl p-1 w-fit">
+            <div className="flex space-x-1 mt-4 bg-white/5 rounded-xl p-1 w-full md:w-fit overflow-x-auto justify-between scrollbar-hide">
               {[
                 { id: 'write', label: 'Write', icon: FileText },
                 { id: 'preview', label: 'Preview', icon: Eye },
-                { id: 'settings', label: 'Settings', icon: Settings }
+                /* { id: 'settings', label: 'Settings', icon: Settings } */
               ].map((tab) => (
                 <button key={tab.id} onClick={() => setCurrentTab(tab.id as any)}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all ${
+                  className={`flex-1 md:flex-none flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg transition-all text-sm whitespace-nowrap ${
                     currentTab === tab.id ? 'bg-primary text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'
                   }`}>
                   <tab.icon className="w-4 h-4" />
@@ -282,10 +286,10 @@ const CreatePost: React.FC = () => {
           </div>
         </header>
 
-        <main className="w-full px-4 lg:px-8 py-8">
+        <main className="w-full px-4 lg:px-8 py-8 pb-24 md:pb-8">
           {currentTab === 'write' && (
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 pb-20 lg:pb-0">
-              <div className="xl:col-span-2 space-y-6">
+              <div className="xl:col-span-2 space-y-6 glass-panel rounded-2xl border border-white/20 p-6">
                 <div className="relative group">
                   <input type="text" placeholder="Enter your post title..." value={postData.title}
                     onChange={(e) => setPostData(prev => ({ ...prev, title: e.target.value }))}
@@ -294,7 +298,7 @@ const CreatePost: React.FC = () => {
                 
                 <div className="relative group">
                   <textarea placeholder="Write a compelling excerpt (optional)..." value={postData.excerpt}
-                    onChange={(e) => setPostData(prev => ({ ...prev, excerpt: e.target.value }))} rows={3}
+                    onChange={(e) => setPostData(prev => ({ ...prev, excerpt: e.target.value }))} rows={6}
                     className="w-full text-xl bg-transparent text-gray-300 placeholder-gray-500 focus:outline-none border-b border-white/10 focus:border-primary/50 resize-none px-0 pb-4 transition-all" />
                 </div>
 
@@ -440,6 +444,7 @@ const CreatePost: React.FC = () => {
             </div>
           )}
 
+          {/* Settings tab disabled
           {currentTab === 'settings' && (
             <div className="w-full px-4 lg:px-8 py-4">
               <div>
@@ -530,6 +535,7 @@ const CreatePost: React.FC = () => {
               </div>
             </div>
           )}
+          */}
         </main>
       </div>
 
@@ -542,11 +548,11 @@ const CreatePost: React.FC = () => {
             </div>
             <p className="text-gray-300 mb-6">You have unsaved changes. What would you like to do?</p>
             <div className="flex flex-col space-y-3">
-              <button onClick={handleSaveAndExit} disabled={saving}
+              {/* <button onClick={handleSaveAndExit} disabled={saving}
                 className="flex items-center justify-center space-x-2 p-3 bg-primary text-white font-medium rounded-xl hover:shadow-lg transition-all disabled:opacity-50">
                 <Save className="w-4 h-4" />
                 <span>{saving ? 'Saving...' : 'Save Draft & Exit'}</span>
-              </button>
+              </button> */}
               <button onClick={handleExitWithoutSaving}
                 className="flex items-center justify-center space-x-2 p-3 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-400 rounded-xl transition-all">
                 <X className="w-4 h-4" />

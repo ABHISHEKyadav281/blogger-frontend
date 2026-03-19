@@ -29,7 +29,7 @@ const MyBookmarksPage: React.FC = () => {
 
                 <button 
                     onClick={() => navigate('/')}
-                    className="flex items-center space-x-2 text-gray-400 hover:text-white transition-all group"
+                    className="hidden md:flex items-center space-x-2 text-gray-400 hover:text-white transition-all group"
                 >
                     <div className="p-2 bg-white/5 rounded-xl group-hover:bg-white/10 transition-all border border-white/10">
                         <ArrowLeft className="w-5 h-5" />

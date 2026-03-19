@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../redux/slices/hooks';
 import { fetchUserDetails, fetchUserPosts } from '../redux/slices/userProfileSlice';
+import { logout } from '../redux/slices/authSlice';
 import api from '../utils/api';
 import { API_BASE_URL } from '../config';
 import { 
@@ -42,7 +43,8 @@ import {
   Ban,
   Flag,
   Link as LinkIcon,
-  Check
+  Check,
+  LogOut
 } from 'lucide-react';
 import ImageModal from '../components/ui/ImageModal';
 
@@ -247,6 +249,17 @@ const EditProfileModal: React.FC<{
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleSave = () => {
@@ -299,9 +312,9 @@ const EditProfileModal: React.FC<{
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-black/90 backdrop-blur-xl rounded-3xl border border-white/20 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-black/90 backdrop-blur-xl rounded-3xl border border-white/20 w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide">
         {/* Header */}
-        <div className="sticky top-0 bg-black/90 backdrop-blur-xl border-b border-white/10 p-6">
+        <div className="sticky top-0 z-20 bg-black/90 backdrop-blur-xl border-b border-white/10 p-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-white">Edit Profile</h2>
             <button
@@ -313,7 +326,7 @@ const EditProfileModal: React.FC<{
           </div>
 
           {/* Tabs */}
-          <div className="flex space-x-1 mt-4 bg-white/5 rounded-xl p-1">
+          <div className="flex space-x-1 mt-4 bg-white/5 rounded-xl p-1 overflow-x-auto scrollbar-hide w-full">
             {[
               { id: 'profile', label: 'Profile', icon: Users },
               { id: 'social', label: 'Social Links', icon: LinkIcon },
@@ -322,13 +335,13 @@ const EditProfileModal: React.FC<{
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all flex-1 justify-center ${
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all flex-1 md:flex-none justify-center whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'bg-gradient-to-r from-pink-500 to-violet-500 text-white'
                     : 'text-gray-400 hover:text-white hover:bg-white/10'
                 }`}
               >
-                <tab.icon className="w-4 h-4" />
+                <tab.icon className="hidden sm:block w-4 h-4 flex-shrink-0" />
                 <span className="text-sm">{tab.label}</span>
               </button>
             ))}
@@ -606,7 +619,8 @@ const UserProfilePage: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [activity] = useState<Activity[]>([]);
-  const [activeTab, setActiveTab] = useState<'posts' | 'activity' | 'about'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'about'>('posts');
+  // const [activeTab, setActiveTab] = useState<'posts' | 'activity' | 'about'>('posts');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showEditModal, setShowEditModal] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -626,6 +640,11 @@ const UserProfilePage: React.FC = () => {
     postsError
   } = useAppSelector((state) => state.userProfile);
   const { user: authUser } = useAppSelector((state) => state.auth);
+
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate('/auth');
+  };
 
   const userId = urlUserId || authUser?.id?.toString();
   const isOwnProfile = !urlUserId || (authUser?.id && urlUserId.toString() === authUser.id.toString());
@@ -814,7 +833,7 @@ const UserProfilePage: React.FC = () => {
   };
 
   return (
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto pb-24 md:pb-8">
       {/* Background Effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
@@ -861,10 +880,10 @@ const UserProfilePage: React.FC = () => {
               <div className="absolute inset-0 bg-black/20" />
               
               {/* Profile Navigation Overlays */}
-              <div className="absolute top-[10px] left-4 right-4 z-20 flex items-center justify-between">
+              <div className="absolute top-[10px] left-4 right-4 z-20 flex items-center justify-end md:justify-between">
                 <button 
                   onClick={() => navigate('/')}
-                  className="p-2.5 bg-black/40 backdrop-blur-md border border-white/20 rounded-2xl text-white hover:bg-black/60 transition-all group scale-100 active:scale-95"
+                  className="hidden md:flex p-2.5 bg-black/40 backdrop-blur-md border border-white/20 rounded-2xl text-white hover:bg-black/60 transition-all group scale-100 active:scale-95"
                 >
                   <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                 </button>
@@ -891,6 +910,13 @@ const UserProfilePage: React.FC = () => {
                           <button className="w-full flex items-center space-x-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-all border-t border-white/5 mt-1 pt-3">
                             <Settings className="w-4 h-4" />
                             <span className="text-sm font-medium">Settings</span>
+                          </button>
+                          <button 
+                            onClick={handleLogout}
+                            className="w-full flex items-center space-x-3 px-4 py-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all border-t border-white/5 mt-1 pt-3"
+                          >
+                            <LogOut className="w-4 h-4" />
+                            <span className="text-sm font-medium">Sign Out</span>
                           </button>
                         </>
                       ) : (
@@ -1002,22 +1028,18 @@ const UserProfilePage: React.FC = () => {
                   </div>
 
                   {/* Stats */}
-                  <div className="flex items-center space-x-8">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-white">{user.stats.posts}</div>
-                      <div className="text-sm text-gray-400">Posts</div>
+                  <div className="grid grid-cols-3 gap-2 sm:gap-4 md:flex md:items-center md:space-x-8">
+                    <div className="text-center md:text-left">
+                      <div className="text-xl md:text-2xl font-bold text-white">{user.stats.posts}</div>
+                      <div className="text-xs md:text-sm text-gray-400">Posts</div>
                     </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-white">{user.stats.followers.toLocaleString()}</div>
-                      <div className="text-sm text-gray-400">Followers</div>
+                    <div className="text-center md:text-left">
+                      <div className="text-xl md:text-2xl font-bold text-white">{user.stats.followers.toLocaleString()}</div>
+                      <div className="text-xs md:text-sm text-gray-400">Followers</div>
                     </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-white">{user.stats.following}</div>
-                      <div className="text-sm text-gray-400">Following</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-white">{user.stats.likes.toLocaleString()}</div>
-                      <div className="text-sm text-gray-400">Likes</div>
+                    <div className="text-center md:text-left">
+                      <div className="text-xl md:text-2xl font-bold text-white">{user.stats.following}</div>
+                      <div className="text-xs md:text-sm text-gray-400">Following</div>
                     </div>
                   </div>
 
@@ -1064,24 +1086,24 @@ const UserProfilePage: React.FC = () => {
           {/* Content Tabs */}
           <div className="mt-8">
             {/* Tab Navigation */}
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex space-x-1 bg-white/10 rounded-xl p-1">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+              <div className="flex space-x-1 bg-white/10 rounded-xl p-1 w-full md:w-auto overflow-x-auto justify-between scrollbar-hide">
                 {[
                   { id: 'posts', label: 'Posts', icon: FileText, count: user.stats.posts },
-                  { id: 'activity', label: 'Activity', icon: TrendingUp, count: activity.length },
+                  // { id: 'activity', label: 'Activity', icon: TrendingUp, count: activity.length },
                   { id: 'about', label: 'About', icon: Users }
                 ].map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex items-center space-x-2 px-6 py-3 rounded-lg transition-all ${
+                    className={`flex-1 md:flex-none flex items-center justify-center space-x-2 px-3 sm:px-6 py-3 rounded-lg transition-all whitespace-nowrap ${
                       activeTab === tab.id
                         ? 'bg-gradient-to-r from-pink-500 to-violet-500 text-white'
                         : 'text-gray-400 hover:text-white hover:bg-white/10'
                     }`}
                   >
-                    <tab.icon className="w-4 h-4" />
-                    <span>{tab.label}</span>
+                    <tab.icon className="hidden sm:block w-4 h-4" />
+                    <span className="text-sm sm:text-base">{tab.label}</span>
                     {tab.count !== undefined && (
                       <span className="bg-white/20 text-xs px-2 py-1 rounded-full">
                         {tab.count}
@@ -1092,7 +1114,7 @@ const UserProfilePage: React.FC = () => {
               </div>
 
               {activeTab === 'posts' && (
-                <div className="flex items-center space-x-4">
+                <div className="hidden sm:flex items-center space-x-4">
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => setViewMode('grid')}
@@ -1119,23 +1141,23 @@ const UserProfilePage: React.FC = () => {
             {activeTab === 'posts' && (
               <div>
                 {/* Filters */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 p-6 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                    <div className="relative">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 p-4 sm:p-6 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full sm:w-auto">
+                    <div className="relative w-full sm:w-auto">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <input
                         type="text"
                         placeholder="Search posts..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 pr-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-pink-400"
+                        className="w-full sm:w-auto pl-10 pr-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-pink-400"
                       />
                     </div>
 
                     <select
                       value={filterCategory}
                       onChange={(e) => setFilterCategory(e.target.value)}
-                      className="px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:border-pink-400"
+                      className="w-full sm:w-auto px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:border-pink-400"
                     >
                       {categories.map(cat => (
                         <option key={cat} value={cat} className="bg-gray-800">
