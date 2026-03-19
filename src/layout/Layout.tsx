@@ -10,9 +10,9 @@ export const Layout: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {shouldShowHeader && <Header />}
+      <Header showTopNav={shouldShowHeader} />
 
-      <main className={`flex-grow w-full ${shouldShowHeader ? 'py-8' : ''}`}>
+      <main className={`flex-grow w-full ${shouldShowHeader ? 'py-8' : ''} pb-20 md:pb-0`}>
         <Outlet /> 
       </main>
 

@@ -133,7 +133,7 @@ const RichTextEditor: React.FC<{
 
       {/* Main Editor */}
       <div 
-        className="prose prose-invert prose-lg max-w-none min-h-[500px] focus:outline-none selection:bg-pink-500/30"
+        className="prose prose-invert prose-lg max-w-none min-h-[150px] focus:outline-none selection:bg-pink-500/30"
         style={{ caretColor: '#ec4899' }}
       >
         <div
