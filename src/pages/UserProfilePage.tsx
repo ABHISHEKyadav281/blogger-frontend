@@ -619,8 +619,8 @@ const UserProfilePage: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [activity] = useState<Activity[]>([]);
-  const [activeTab, setActiveTab] = useState<'posts' | 'about'>('posts');
-  // const [activeTab, setActiveTab] = useState<'posts' | 'activity' | 'about'>('posts');
+  // const [activeTab, setActiveTab] = useState<'posts' | 'about'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'activity' | 'about'>('posts');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showEditModal, setShowEditModal] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
