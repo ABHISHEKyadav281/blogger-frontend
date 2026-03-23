@@ -254,12 +254,12 @@ const AuthPage: React.FC = () => {
       payload.append("username", formData.username);
       payload.append("email", formData.email);
       payload.append("password", formData.password);
-      if (formData.bio) {
-        payload.append("bio", formData.bio);
-      }
-      if (profilePic) {
-        payload.append("profilePic", profilePic);
-      }
+      // if (formData.bio) {
+      //   payload.append("bio", formData.bio);
+      // }
+      // if (profilePic) {
+      //   payload.append("profilePic", profilePic);
+      // }
 
       // Call signup API
       const response = await api.post("/auth/v1/signup", payload);
@@ -423,7 +423,7 @@ const AuthPage: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             
             {/* Avatar Upload (Only for Signup) */}
-            {!isLogin && (
+            {/* {!isLogin && (
               <div className="flex flex-col items-center justify-center mb-6">
                 <div 
                   className="relative w-24 h-24 rounded-full bg-white/10 border-2 border-dashed border-white/20 flex items-center justify-center cursor-pointer hover:border-pink-400 transition-colors group overflow-hidden"
@@ -447,7 +447,7 @@ const AuthPage: React.FC = () => {
                   onChange={onFileChange}
                 />
               </div>
-            )}
+            )} */}
 
             {/* Email Field (only for signup) */}
             {!isLogin && (
@@ -502,7 +502,7 @@ const AuthPage: React.FC = () => {
             </div>
 
              {/* Bio Field (only for signup) */}
-             {!isLogin && (
+             {/* {!isLogin && (
               <div>
                 <div className="relative">
                   <textarea
@@ -516,7 +516,7 @@ const AuthPage: React.FC = () => {
                   />
                 </div>
               </div>
-            )}
+            )} */}
 
             {/* Password Field */}
             <div>
