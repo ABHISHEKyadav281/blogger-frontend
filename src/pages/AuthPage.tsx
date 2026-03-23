@@ -15,6 +15,7 @@ import api from "../utils/api";
 import { jwtDecode } from "jwt-decode";
 import Cropper from "react-easy-crop";
 import getCroppedImg from "../utils/cropImage";
+import { API_BASE_URL } from "../config";
 
 const GoogleIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px">
@@ -301,7 +302,7 @@ const AuthPage: React.FC = () => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:8080/oauth2/authorization/google';
+    window.location.href = `${API_BASE_URL}/oauth2/authorization/google`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
