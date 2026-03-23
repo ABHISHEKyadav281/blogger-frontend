@@ -302,7 +302,7 @@ const AuthPage: React.FC = () => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = `${API_BASE_URL}/api/oauth2/authorization/google`;
+    window.location.href = `${API_BASE_URL}/oauth2/authorization/google`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
