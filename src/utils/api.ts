@@ -15,7 +15,7 @@ api.interceptors.request.use(
     }
 
     // Only set default Content-Type if not already specified (e.g. for FormData)
-    if (!config.headers["Content-Type"]) {
+    if (!(config.data instanceof FormData) && !config.headers["Content-Type"]) {
       config.headers["Content-Type"] = "application/json";
     }
     return config;

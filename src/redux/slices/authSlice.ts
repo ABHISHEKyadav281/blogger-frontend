@@ -11,6 +11,16 @@ interface AuthState {
   error: string | null;
 }
 
+// Extract token from URL early if redirected from OAuth2 backend
+const urlParams = window ? new URLSearchParams(window.location.search) : null;
+const urlToken = urlParams ? (urlParams.get("token") || urlParams.get("access_token")) : null;
+
+if (urlToken && window) {
+  localStorage.setItem("soloblogger_token", urlToken);
+  localStorage.removeItem("soloblogger_user");
+  window.history.replaceState({}, document.title, window.location.pathname);
+}
+
 // Read from local storage for initial state
 const savedUser = localStorage.getItem('soloblogger_user');
 const savedToken = localStorage.getItem('soloblogger_token');

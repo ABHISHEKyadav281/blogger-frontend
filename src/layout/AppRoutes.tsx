@@ -28,7 +28,17 @@ export const AppRoutes = () => {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    const token = localStorage.getItem("soloblogger_token");
+    // Extract token from URL if redirected from OAuth2 backend
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlToken = urlParams.get("token");
+
+    if (urlToken) {
+      localStorage.setItem("soloblogger_token", urlToken);
+      // Clean up URL to hide token
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    const token = urlToken || localStorage.getItem("soloblogger_token");
     if (token) {
       try {
         const decoded: TokenPayload = jwtDecode(token);

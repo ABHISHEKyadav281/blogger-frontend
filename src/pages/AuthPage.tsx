@@ -1,7 +1,7 @@
 // pages/AuthPage.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, User, Mail, Lock, Sparkles, Heart } from "lucide-react";
+import { Eye, EyeOff, User, Mail, Lock, Sparkles, Heart, Camera, X, Check } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "../redux/slices/hooks";
 import {
   loginStart,
@@ -13,6 +13,17 @@ import {
 import { addToast } from "../redux/slices/uiSlice";
 import api from "../utils/api";
 import { jwtDecode } from "jwt-decode";
+import Cropper from "react-easy-crop";
+import getCroppedImg from "../utils/cropImage";
+
+const GoogleIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px">
+    <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
+    <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
+    <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
+    <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
+  </svg>
+);
 
 interface TokenPayload {
   userId: string;
@@ -26,6 +37,7 @@ interface FormData {
   email: string;
   username: string;
   password: string;
+  bio: string;
 }
 
 const AuthPage: React.FC = () => {
@@ -41,7 +53,20 @@ const AuthPage: React.FC = () => {
     username: "",
     password: "",
     email: "",
+    bio: "",
   });
+  
+  // Profile Pic & Crop States
+  const [profilePic, setProfilePic] = useState<File | null>(null);
+  const [profilePicPreview, setProfilePicPreview] = useState<string | null>(null);
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+  const [isCropping, setIsCropping] = useState(false);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
   >({});
@@ -59,7 +84,9 @@ const AuthPage: React.FC = () => {
     setValidationErrors({});
   }, [isLogin, dispatch]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
@@ -70,6 +97,38 @@ const AuthPage: React.FC = () => {
         delete newErrors[name];
         return newErrors;
       });
+    }
+  };
+
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.addEventListener("load", () => {
+        setImageSrc(reader.result?.toString() || "");
+        setIsCropping(true);
+      });
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const onCropComplete = (croppedArea: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  };
+
+  const showCroppedImage = async () => {
+    try {
+      if (!imageSrc || !croppedAreaPixels) return;
+      const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels);
+      if (croppedImage) {
+        setProfilePic(croppedImage);
+        setProfilePicPreview(URL.createObjectURL(croppedImage));
+        setIsCropping(false);
+        setImageSrc(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -109,7 +168,6 @@ const AuthPage: React.FC = () => {
     return Object.keys(errors).length === 0;
   };
 
-
   // Login function
   const handleLogin = async () => {
     try {
@@ -143,12 +201,12 @@ const AuthPage: React.FC = () => {
             email: decoded.email,
             avatar: "",
             isVerified: false,
-            role: 'user',
+            role: "user",
             stats: {
               posts: 0,
               followers: 0,
-              following: 0
-            }
+              following: 0,
+            },
           },
           token: authToken,
         })
@@ -192,23 +250,30 @@ const AuthPage: React.FC = () => {
     try {
       dispatch(loginStart());
 
+      const payload = new FormData();
+      payload.append("username", formData.username);
+      payload.append("email", formData.email);
+      payload.append("password", formData.password);
+      if (formData.bio) {
+        payload.append("bio", formData.bio);
+      }
+      if (profilePic) {
+        payload.append("profilePic", profilePic);
+      }
+
       // Call signup API
-      const response = await api.post("/auth/v1/signup", {
-        username: formData.username,
-        email: formData.email,
-        password: formData.password,
-      });
+      const response = await api.post("/auth/v1/signup", payload);
 
       // Show success toast
       dispatch(
         addToast({
           type: "success",
           title: "Account Created",
-          message: response.data,
+          message: "Account created successfully! Please login.",
           duration: 3000,
         })
       );
-      
+
       setIsLogin(true);
       dispatch(stopLoading());
     } catch (error: any) {
@@ -217,6 +282,7 @@ const AuthPage: React.FC = () => {
       const errorMessage =
         error.response?.data?.message ||
         error.response?.data?.error ||
+        error.response?.data ||
         error.message ||
         "Signup failed. Please try again.";
 
@@ -227,11 +293,15 @@ const AuthPage: React.FC = () => {
         addToast({
           type: "error",
           title: "Signup Failed",
-          message: errorMessage,
+          message: typeof errorMessage === "string" ? errorMessage : "Signup failed",
           duration: 5000,
         })
       );
     }
+  };
+
+  const handleGoogleLogin = () => {
+    window.location.href = 'http://localhost:8080/oauth2/authorization/google';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -256,7 +326,9 @@ const AuthPage: React.FC = () => {
 
   const switchMode = () => {
     setIsLogin(!isLogin);
-    setFormData({ username: "", password: "", email: "" });
+    setFormData({ username: "", password: "", email: "", bio: "" });
+    setProfilePic(null);
+    setProfilePicPreview(null);
     setValidationErrors({});
     dispatch(clearError());
   };
@@ -296,7 +368,7 @@ const AuthPage: React.FC = () => {
         <Sparkles size={40} />
       </div>
 
-      <div className="relative z-10 w-full max-w-md px-4 md:px-0">
+      <div className="relative z-10 w-full max-w-md px-4 md:px-0 mt-10">
         <div className="glass-panel rounded-2xl md:rounded-3xl p-6 md:p-8">
           {/* Logo and Title */}
           <div className="text-center mb-8">
@@ -305,9 +377,7 @@ const AuthPage: React.FC = () => {
             </div>
             <h1 className="text-3xl font-bold text-white mb-2">
               Solo
-              <span className="text-gradient-rose">
-                Blog
-              </span>
+              <span className="text-gradient-rose">Blog</span>
             </h1>
             <p className="text-gray-300">
               {isLogin ? "Welcome back, otaku!" : "Join our anime community!"}
@@ -315,7 +385,7 @@ const AuthPage: React.FC = () => {
           </div>
 
           {/* Tab Switcher */}
-          <div className="flex bg-white/5 rounded-2xl p-1 mb-8">
+          <div className="flex bg-white/5 rounded-2xl p-1 mb-6">
             <button
               type="button"
               onClick={() => setIsLogin(true)}
@@ -350,7 +420,35 @@ const AuthPage: React.FC = () => {
           )}
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            
+            {/* Avatar Upload (Only for Signup) */}
+            {!isLogin && (
+              <div className="flex flex-col items-center justify-center mb-6">
+                <div 
+                  className="relative w-24 h-24 rounded-full bg-white/10 border-2 border-dashed border-white/20 flex items-center justify-center cursor-pointer hover:border-pink-400 transition-colors group overflow-hidden"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {profilePicPreview ? (
+                    <img src={profilePicPreview} alt="Profile preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <Camera className="w-8 h-8 text-gray-400 group-hover:text-pink-400 transition-colors" />
+                  )}
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Camera className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400 mt-2">Upload Profile Picture</p>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  ref={fileInputRef}
+                  onChange={onFileChange}
+                />
+              </div>
+            )}
+
             {/* Email Field (only for signup) */}
             {!isLogin && (
               <div>
@@ -363,7 +461,7 @@ const AuthPage: React.FC = () => {
                     value={formData.email}
                     onChange={handleChange}
                     disabled={isLoading}
-                    className={`w-full pl-12 pr-4 py-4 bg-white/10 border ${
+                    className={`w-full pl-12 pr-4 py-3 bg-white/10 border ${
                       validationErrors.email
                         ? "border-red-500"
                         : "border-white/20"
@@ -371,7 +469,7 @@ const AuthPage: React.FC = () => {
                   />
                 </div>
                 {validationErrors.email && (
-                  <p className="mt-2 text-red-400 text-sm ml-4">
+                  <p className="mt-1 text-red-400 text-xs ml-4">
                     {validationErrors.email}
                   </p>
                 )}
@@ -389,7 +487,7 @@ const AuthPage: React.FC = () => {
                   value={formData.username}
                   onChange={handleChange}
                   disabled={isLoading}
-                  className={`w-full pl-12 pr-4 py-4 bg-white/10 border ${
+                  className={`w-full pl-12 pr-4 py-3 bg-white/10 border ${
                     validationErrors.username
                       ? "border-red-500"
                       : "border-white/20"
@@ -397,11 +495,28 @@ const AuthPage: React.FC = () => {
                 />
               </div>
               {validationErrors.username && (
-                <p className="mt-2 text-red-400 text-sm ml-4">
+                <p className="mt-1 text-red-400 text-xs ml-4">
                   {validationErrors.username}
                 </p>
               )}
             </div>
+
+             {/* Bio Field (only for signup) */}
+             {!isLogin && (
+              <div>
+                <div className="relative">
+                  <textarea
+                    name="bio"
+                    placeholder="Short bio (optional)"
+                    value={formData.bio}
+                    onChange={handleChange}
+                    disabled={isLoading}
+                    rows={2}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:border-pink-400 focus:bg-white/15 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed resize-none"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Password Field */}
             <div>
@@ -416,7 +531,7 @@ const AuthPage: React.FC = () => {
                   value={formData.password}
                   onChange={handleChange}
                   disabled={isLoading}
-                  className={`w-full pl-12 pr-12 py-4 bg-white/10 border ${
+                  className={`w-full pl-12 pr-12 py-3 bg-white/10 border ${
                     validationErrors.password
                       ? "border-red-500"
                       : "border-white/20"
@@ -436,7 +551,7 @@ const AuthPage: React.FC = () => {
                 </button>
               </div>
               {validationErrors.password && (
-                <p className="mt-2 text-red-400 text-sm ml-4">
+                <p className="mt-1 text-red-400 text-xs ml-4">
                   {validationErrors.password}
                 </p>
               )}
@@ -446,7 +561,7 @@ const AuthPage: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-4 bg-primary text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              className="w-full py-3 mt-4 bg-primary text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
               {isLoading ? (
                 <div className="flex items-center justify-center space-x-2">
@@ -463,8 +578,26 @@ const AuthPage: React.FC = () => {
             </button>
           </form>
 
+          {/* Divider */}
+          <div className="flex items-center my-6">
+            <div className="flex-grow border-t border-white/10"></div>
+            <span className="shrink-0 px-4 text-gray-400 text-sm">or</span>
+            <div className="flex-grow border-t border-white/10"></div>
+          </div>
+
+          {/* Google Login Button */}
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={isLoading}
+            className="w-full py-3 bg-white/5 border border-white/10 text-white font-medium rounded-2xl shadow-sm hover:bg-white/10 transform hover:scale-[1.02] transition-all duration-300 focus:outline-none flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          >
+            <GoogleIcon />
+            Continue with Google
+          </button>
+
           {/* Switch Mode Link */}
-          <div className="mt-8 text-center">
+          <div className="mt-6 text-center">
             <p className="text-gray-400 text-sm">
               {isLogin
                 ? "Don't have an account? "
@@ -479,22 +612,69 @@ const AuthPage: React.FC = () => {
               </button>
             </p>
           </div>
-
-          {/* Forgot Password Link (only for login) */}
-          {isLogin && (
-            <div className="mt-4 text-center">
-              <button
-                type="button"
-                onClick={() => navigate("/forgot-password")}
-                disabled={isLoading}
-                className="text-gray-400 hover:text-pink-300 text-sm transition-colors focus:outline-none disabled:opacity-50"
-              >
-                Forgot your password?
-              </button>
-            </div>
-          )}
         </div>
       </div>
+
+      {/* Cropper Modal */}
+      {isCropping && imageSrc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+          <div className="bg-[#1a1a2e] w-full max-w-lg rounded-3xl overflow-hidden flex flex-col shadow-2xl border border-white/10">
+            <div className="p-4 border-b border-white/10 flex justify-between items-center">
+              <h3 className="text-white font-semibold text-lg">Crop Profile Picture</h3>
+              <button onClick={() => { setIsCropping(false); setImageSrc(null); }} className="text-gray-400 hover:text-white transition-colors p-1 bg-white/5 rounded-full">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="relative w-full h-80 bg-black">
+              <Cropper
+                image={imageSrc}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                cropShape="round"
+                showGrid={false}
+                onCropChange={setCrop}
+                onCropComplete={onCropComplete}
+                onZoomChange={setZoom}
+              />
+            </div>
+            
+            <div className="p-4 bg-[#1a1a2e]">
+              <div className="mb-4">
+                <label className="text-xs text-gray-400 block mb-2">Zoom</label>
+                <input
+                  type="range"
+                  value={zoom}
+                  min={1}
+                  max={3}
+                  step={0.1}
+                  aria-labelledby="Zoom"
+                  onChange={(e) => setZoom(Number(e.target.value))}
+                  className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-primary"
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setIsCropping(false); setImageSrc(null); }}
+                  className="px-4 py-2 rounded-xl text-gray-300 font-medium hover:bg-white/5 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={showCroppedImage}
+                  className="px-6 py-2 bg-primary text-white rounded-xl font-medium shadow-lg hover:shadow-primary/30 flex items-center gap-2 transition-transform active:scale-95"
+                >
+                  <Check size={18} />
+                  Apply
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
