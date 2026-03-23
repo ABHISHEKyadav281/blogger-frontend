@@ -302,7 +302,8 @@ const AuthPage: React.FC = () => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = `${API_BASE_URL}/oauth2/authorization/google`;
+    window.location.href = 'https://d1fcc57uip4q6l.cloudfront.net/oauth2/authorization/google';
+    // window.location.href = 'http://localhost:8080/oauth2/authorization/google';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
