@@ -199,6 +199,16 @@ const MobileMenu: React.FC<{
               <span className="font-medium">Profile</span>
             </button>
 
+            <hr className="my-2 border-white/10" />
+            
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center space-x-3 p-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-all"
+            >
+              <LogOut className="w-5 h-5" />
+              <span className="font-medium">Sign Out</span>
+            </button>
+
           </div>
 
         </div>
