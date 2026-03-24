@@ -251,19 +251,12 @@ const AuthPage: React.FC = () => {
     try {
       dispatch(loginStart());
 
-      const payload = new FormData();
-      payload.append("username", formData.username);
-      payload.append("email", formData.email);
-      payload.append("password", formData.password);
-      // if (formData.bio) {
-      //   payload.append("bio", formData.bio);
-      // }
-      // if (profilePic) {
-      //   payload.append("profilePic", profilePic);
-      // }
-
       // Call signup API
-      const response = await api.post("/auth/v1/signup", payload);
+      const response = await api.post("/auth/v1/signup", {
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+      });
 
       // Show success toast
       dispatch(
@@ -302,8 +295,9 @@ const AuthPage: React.FC = () => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = 'https://d1fcc57uip4q6l.cloudfront.net/oauth2/authorization/google';
-    // window.location.href = 'http://localhost:8080/oauth2/authorization/google';
+    // Dynamically generate the backend OAuth2 URL based on API_BASE_URL
+    const backendBase = API_BASE_URL.replace(/\/api$/, '') || 'http://localhost:8080';
+    window.location.href = `${backendBase}/oauth2/authorization/google`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

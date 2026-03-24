@@ -12,7 +12,7 @@ import MyBookmarksPage from "../pages/MyBookmarksPage";
 import MyFollowsPage from "../pages/MyFollowsPage";
 import MyBlogsPage from "../pages/MyBlogsPage";
 import NotificationsPage from "../pages/NotificationsPage";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 import { loginSuccess, logout } from "../redux/slices/authSlice";
 import { useAppDispatch } from "../redux/slices/hooks";
@@ -26,12 +26,22 @@ interface TokenPayload {
 
 export const AppRoutes = () => {
   const dispatch = useAppDispatch();
+  
+  // Safely capture the token from URL during the first render phase,
+  // before child effects (like <Navigate>) modify the history buffer
+  const [urlToken] = useState(() => {
+    if (typeof window === 'undefined') return null;
+    const params = new URLSearchParams(window.location.search);
+    let token = params.get("token") || params.get("access_token");
+    if (!token && window.location.hash) {
+      const hashStr = window.location.hash.substring(1);
+      const hashParams = new URLSearchParams(hashStr.includes('?') ? hashStr.substring(hashStr.indexOf('?')) : hashStr);
+      token = hashParams.get("token") || hashParams.get("access_token");
+    }
+    return token;
+  });
 
   useEffect(() => {
-    // Extract token from URL if redirected from OAuth2 backend
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlToken = urlParams.get("token");
-
     if (urlToken) {
       localStorage.setItem("soloblogger_token", urlToken);
       // Clean up URL to hide token
