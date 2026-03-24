@@ -12,13 +12,22 @@ interface AuthState {
 }
 
 // Extract token from URL early if redirected from OAuth2 backend
-const urlParams = window ? new URLSearchParams(window.location.search) : null;
-const urlToken = urlParams ? (urlParams.get("token") || urlParams.get("access_token")) : null;
+let urlToken: string | null = null;
+if (typeof window !== 'undefined') {
+  const searchParams = new URLSearchParams(window.location.search);
+  urlToken = searchParams.get("token") || searchParams.get("access_token");
+  
+  if (!urlToken && window.location.hash) {
+    const hashStr = window.location.hash.substring(1);
+    const hashParams = new URLSearchParams(hashStr.includes('?') ? hashStr.substring(hashStr.indexOf('?')) : hashStr);
+    urlToken = hashParams.get("token") || hashParams.get("access_token");
+  }
 
-if (urlToken && window) {
-  localStorage.setItem("soloblogger_token", urlToken);
-  localStorage.removeItem("soloblogger_user");
-  window.history.replaceState({}, document.title, window.location.pathname);
+  if (urlToken) {
+    localStorage.setItem("soloblogger_token", urlToken);
+    localStorage.removeItem("soloblogger_user");
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
 }
 
 // Read from local storage for initial state
