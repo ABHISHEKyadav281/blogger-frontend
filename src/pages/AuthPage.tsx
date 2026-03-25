@@ -297,7 +297,9 @@ const AuthPage: React.FC = () => {
   const handleGoogleLogin = () => {
     // Dynamically generate the backend OAuth2 URL based on API_BASE_URL
     const backendBase = API_BASE_URL.replace(/\/api$/, '') || 'http://localhost:8080';
-    window.location.href = `${backendBase}/oauth2/authorization/google`;
+    // Optionally pass the current frontend URL so the backend knows where to redirect back
+    const redirectUri = encodeURIComponent(window.location.origin + '/');
+    window.location.href = `${backendBase}/oauth2/authorization/google?redirect_uri=${redirectUri}`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
