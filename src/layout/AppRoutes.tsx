@@ -16,6 +16,7 @@ import { useEffect, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 import { loginSuccess, logout } from "../redux/slices/authSlice";
 import { useAppDispatch } from "../redux/slices/hooks";
+import OAuthCallback from "../pages/OAuthCallback";
 
 interface TokenPayload {
   userId: string;
@@ -175,6 +176,8 @@ export const AppRoutes = () => {
           }
         />
       </Route>
+
+      <Route path="/oauth2/callback" element={<OAuthCallback />} />
 
       {/* Redirects */}
       <Route path="/" element={<Navigate to="/home" replace />} />
