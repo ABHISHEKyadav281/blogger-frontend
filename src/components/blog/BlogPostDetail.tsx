@@ -255,10 +255,15 @@ const BlogPostDetail: React.FC = () => {
             }}
           />
           
-          {/* Navigation Overlay */}
           <div className="absolute top-4 left-4 z-20">
             <button 
-              onClick={() => navigate('/')}
+              onClick={() => {
+                if (window.history.state && window.history.state.idx > 0) {
+                  navigate(-1);
+                } else {
+                  navigate('/', { replace: true });
+                }
+              }}
               className="p-2.5 bg-black/40 backdrop-blur-md border border-white/20 rounded-full text-white hover:bg-black/60 transition-all group active:scale-95"
               title="Back"
             >

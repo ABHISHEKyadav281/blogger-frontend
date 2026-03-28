@@ -11,6 +11,7 @@ interface PostsListState {
     currentPage: number;
     totalPages: number;
     hasMore: boolean;
+    feedType: 'HOME' | 'BOOKMARKS' | 'USER' | 'FEATURED' | null;
     filters: {
         category: string | null;
         status: string | null;
@@ -28,6 +29,7 @@ const initialState: PostsListState = {
     currentPage: 1,
     totalPages: 1,
     hasMore: false,
+    feedType: null,
     filters: {
         category: null,
         status: null,
@@ -300,6 +302,15 @@ const postsListSlice = createSlice({
             state.totalPosts = 0;
         },
         setFilters: (state, action: PayloadAction<Partial<PostsListState['filters']>>) => {
+            // Check if filters are actually changing
+            const hasChanges = Object.keys(action.payload).some(
+                (key) => (action.payload as any)[key] !== (state.filters as any)[key]
+            );
+
+            if (!hasChanges) {
+                return; // Do nothing if filters match exactly
+            }
+
             state.filters = { ...state.filters, ...action.payload };
             state.currentPage = 1;
             state.posts = [];
@@ -337,7 +348,7 @@ const postsListSlice = createSlice({
                 const totalPages = payloadAny?.totalPages || 1;
                 const hasMore = payloadAny?.hasMore || (currentPage < totalPages) || false;
 
-                if (currentPage === 1) {
+                if (currentPage === 1 || state.feedType !== 'HOME') {
                     state.posts = posts;
                 } else {
                     const newPosts = posts.filter(
@@ -350,6 +361,7 @@ const postsListSlice = createSlice({
                 state.currentPage = currentPage;
                 state.totalPages = totalPages;
                 state.hasMore = hasMore;
+                state.feedType = 'HOME';
                 state.error = null;
             })
             .addCase(fetchPosts.rejected, (state, action) => {
@@ -366,6 +378,7 @@ const postsListSlice = createSlice({
             .addCase(fetchFeaturedPosts.fulfilled, (state, action) => {
                 state.isLoading = false;
                 state.posts = action.payload.posts || [];
+                state.feedType = 'FEATURED';
                 state.error = null;
             })
             .addCase(fetchFeaturedPosts.rejected, (state, action) => {
@@ -382,7 +395,7 @@ const postsListSlice = createSlice({
             .addCase(fetchUserPosts.fulfilled, (state, action) => {
                 state.isLoading = false;
                 const { posts, totalPosts, currentPage, totalPages, hasMore } = action.payload;
-                if (currentPage === 1) {
+                if (currentPage === 1 || state.feedType !== 'USER') {
                     state.posts = posts || [];
                 } else {
                     state.posts.push(...(posts || []));
@@ -391,6 +404,7 @@ const postsListSlice = createSlice({
                 state.currentPage = currentPage || 1;
                 state.totalPages = totalPages || 1;
                 state.hasMore = hasMore || false;
+                state.feedType = 'USER';
                 state.error = null;
             })
             .addCase(fetchUserPosts.rejected, (state, action) => {
@@ -479,11 +493,7 @@ const postsListSlice = createSlice({
             })
             .addCase(fetchBookmarkedPosts.fulfilled, (state, action) => {
                 state.isLoading = false;
-                // Handle various potential API response formats: 
-                // 1. { posts: [...] }
-                // 2. { data: [...] }
-                // 3. { content: [...] } (Spring/JPA)
-                // 4. [...] (Direct array)
+                // Handle various potential API response formats
                 const payload = action.payload;
                 const posts = payload?.posts || payload?.data || payload?.content || (Array.isArray(payload) ? payload : []);
 
@@ -493,11 +503,16 @@ const postsListSlice = createSlice({
                 const hasMore = payload?.hasMore || (currentPage < totalPages) || false;
 
                 state.bookmarkedPosts = posts;
-                state.posts = posts;
+                if (currentPage === 1 || state.feedType !== 'BOOKMARKS') {
+                    state.posts = posts;
+                } else {
+                    state.posts.push(...posts);
+                }
                 state.totalPosts = totalPosts;
                 state.currentPage = currentPage;
                 state.totalPages = totalPages;
                 state.hasMore = hasMore;
+                state.feedType = 'BOOKMARKS';
             })
             .addCase(fetchBookmarkedPosts.rejected, (state, action) => {
                 state.isLoading = false;
