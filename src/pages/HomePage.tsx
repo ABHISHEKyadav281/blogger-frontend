@@ -102,14 +102,30 @@ const HomePage: React.FC = () => {
   }, [dispatch, filters]);
 
   // Handle Initial Load and Filter Changes
+  const prevFiltersRef = useRef(filters);
+
   useEffect(() => {
+    const filtersChanged = 
+      prevFiltersRef.current.search !== filters.search ||
+      prevFiltersRef.current.category !== filters.category;
+      
+    // Always update the ref for the next render
+    prevFiltersRef.current = filters;
+
+    // If filters haven't changed, we already have posts, AND those posts belong to the HOME feed, skip fetch!
+    // This prevents Bookmarks or Profile posts from lingering on the Home page.
+    if (!filtersChanged && posts.length > 0 && postsState.feedType === 'HOME') {
+      return;
+    }
+
     console.log('🚀 Fetching posts with filters:', filters);
     dispatch(resetPosts());
     fetchWrappedPosts(1);
-  }, [dispatch, filters.search, filters.category]);
+  }, [dispatch, filters.search, filters.category, postsState.feedType]);
 
   // ✅ Category Handler
   const handleCategorySelect = (category: string | null) => {
+    if (filters.category === category) return; // Prevent clearing the list if they click the active tab
     dispatch(setFilters({ category }));
   };
 

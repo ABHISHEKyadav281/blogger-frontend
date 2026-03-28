@@ -103,8 +103,8 @@ const MobileMenu: React.FC<{
   const { unreadCount } = useAppSelector((state) => state.notifications);
 
   const handleNavigate = (path: string) => {
-    if (path === '/') {
-      dispatch(setFilters({ search: '' }));
+    if (path === '/' || path === '/home') {
+      dispatch(setFilters({ search: '', category: null }));
     }
     navigate(path);
     onClose();
@@ -266,8 +266,8 @@ const Header: React.FC<HeaderProps> = ({ showTopNav = true }) => {
   };
 
   const handleNavigate = (path: string) => {
-    if (path === '/') {
-      dispatch(setFilters({ search: '' }));
+    if (path === '/' || path === '/home') {
+      dispatch(setFilters({ search: '', category: null }));
     }
     navigate(path);
     setShowProfileMenu(false);
