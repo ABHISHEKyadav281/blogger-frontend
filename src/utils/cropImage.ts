@@ -24,6 +24,9 @@ export default async function getCroppedImg(
     return null;
   }
 
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+
   const maxSize = Math.max(image.width, image.height);
   const safeArea = 2 * ((maxSize / 2) * Math.sqrt(2));
 
@@ -65,6 +68,6 @@ export default async function getCroppedImg(
       } else {
         resolve(null);
       }
-    }, "image/jpeg");
+    }, "image/jpeg", 1);
   });
 }
