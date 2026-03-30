@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../redux/slices/hooks';
-import { fetchUserDetails, fetchUserPosts } from '../redux/slices/userProfileSlice';
+import { fetchUserDetails, fetchUserPosts, modifyUserDetails, type UserDetailsReqDto } from '../redux/slices/userProfileSlice';
 import { logout } from '../redux/slices/authSlice';
 import api from '../utils/api';
 import { API_BASE_URL } from '../config';
@@ -251,6 +251,12 @@ const EditProfileModal: React.FC<{
 
   useEffect(() => {
     if (isOpen) {
+      setEditedUser(user);
+    }
+  }, [isOpen, user]);
+
+  useEffect(() => {
+    if (isOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -325,7 +331,7 @@ const EditProfileModal: React.FC<{
             </button>
           </div>
 
-          {/* Tabs */}
+          {/* Tabs - Commented out for now
           <div className="flex space-x-1 mt-4 bg-white/5 rounded-xl p-1 overflow-x-auto scrollbar-hide w-full">
             {[
               { id: 'profile', label: 'Profile', icon: Users },
@@ -346,43 +352,12 @@ const EditProfileModal: React.FC<{
               </button>
             ))}
           </div>
+          */}
         </div>
 
         <div className="p-6">
           {activeTab === 'profile' && (
             <div className="space-y-6">
-              {/* Cover Image */}
-              <div>
-                <label className="block text-white font-medium mb-3">Cover Image</label>
-                <div className="relative">
-                  <div className="h-32 bg-gradient-to-r from-pink-500/20 to-violet-500/20 rounded-xl overflow-hidden">
-                    {editedUser.coverImage && (
-                      <img 
-                        src={editedUser.coverImage.startsWith('http') || editedUser.coverImage.startsWith('data:image') ? editedUser.coverImage : `${API_BASE_URL}${editedUser.coverImage.startsWith('/') ? '' : '/'}${editedUser.coverImage}`} 
-                        alt="Cover" 
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.src = 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=200&fit=crop';
-                        }}
-                      />
-                    )}
-                  </div>
-                  <button
-                    onClick={() => coverInputRef.current?.click()}
-                    className="absolute bottom-2 right-2 p-2 bg-black/70 hover:bg-black/80 text-white rounded-lg transition-all"
-                  >
-                    <Camera className="w-4 h-4" />
-                  </button>
-                  <input
-                    ref={coverInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleCoverUpload}
-                    className="hidden"
-                  />
-                </div>
-              </div>
-
               {/* Avatar */}
               <div>
                 <label className="block text-white font-medium mb-3">Profile Picture</label>
@@ -451,26 +426,7 @@ const EditProfileModal: React.FC<{
                 <div className="text-xs text-gray-400 mt-1">{editedUser.bio.length}/160</div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-white font-medium mb-2">Location</label>
-                  <input
-                    type="text"
-                    value={editedUser.location}
-                    onChange={(e) => setEditedUser(prev => ({ ...prev, location: e.target.value }))}
-                    className="w-full p-3 bg-white/5 border border-white/20 rounded-xl text-white focus:outline-none focus:border-pink-400"
-                  />
-                </div>
-                <div>
-                  <label className="block text-white font-medium mb-2">Website</label>
-                  <input
-                    type="url"
-                    value={editedUser.website || ''}
-                    onChange={(e) => setEditedUser(prev => ({ ...prev, website: e.target.value }))}
-                    className="w-full p-3 bg-white/5 border border-white/20 rounded-xl text-white focus:outline-none focus:border-pink-400"
-                  />
-                </div>
-              </div>
+
             </div>
           )}
 
@@ -675,8 +631,8 @@ const UserProfilePage: React.FC = () => {
         username: profileData.username,
         avatar: profileData.profileImage || `https://ui-avatars.com/api/?name=${profileData.username}&background=random`,
         coverImage: profileData.coverImage || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&h=400&fit=crop',
-        bio: profileData.bio || 'No bio provided',
-        location: profileData.location || 'Unknown location',
+        bio: profileData.bio || '',
+        location: profileData.location || '',
         website: profileData.website || '',
         joinDate: 'March 2024', // Fallback
         email: profileData.email,
@@ -814,9 +770,40 @@ const UserProfilePage: React.FC = () => {
     navigate(`/post/${postId}`);
   };
 
-  const handleSaveProfile = (updatedUser: Partial<User>) => {
-    setUser(prev => ({ ...prev, ...updatedUser }));
-    console.log('Saving profile:', updatedUser);
+  const handleEditProfileClick = async () => {
+    setShowUserMenu(false);
+    if (user?.id) {
+      try {
+        await dispatch(fetchUserDetails(user.id)).unwrap();
+      } catch (error) {
+        console.error('Failed to prefetch user info:', error);
+      }
+    }
+    setShowEditModal(true);
+  };
+
+  const handleSaveProfile = async (updatedUser: User) => {
+    console.log('💾 handleSaveProfile initiated with:', updatedUser);
+    try {
+      const updateDto: UserDetailsReqDto = {
+        username: updatedUser.username,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        profilePicUrl: updatedUser.avatar,
+        bio: updatedUser.bio || ''
+      };
+
+      console.log('📡 Calling modifyUserDetails thunk with DTO:', updateDto);
+      const result = await dispatch(modifyUserDetails(updateDto)).unwrap();
+      console.log('✅ Profile updated successfully:', result);
+      
+      // Update local state if needed
+      setUser(prev => ({ ...prev, ...updatedUser }));
+      setShowEditModal(false); // Close modal only on success
+    } catch (err) {
+      console.error('❌ Failed to update profile:', err);
+      // You could show an error toast here
+    }
   };
 
   const getRoleIcon = (role: string) => {
@@ -833,6 +820,7 @@ const UserProfilePage: React.FC = () => {
   };
 
   return (
+    <div className="min-h-screen bg-background text-white">
       <div className="max-w-7xl mx-auto pb-24 md:pb-8">
       {/* Background Effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
@@ -851,228 +839,177 @@ const UserProfilePage: React.FC = () => {
         )}
 
         {profileError && (
-          <div className="max-w-7xl mx-auto px-6 pt-4">
-            <div className="p-4 bg-red-500/20 border border-red-500/50 rounded-2xl text-red-200 flex items-center space-x-3">
-              <Ban className="w-5 h-5 flex-shrink-0" />
-              <p>{profileError}</p>
+          <div className="fixed top-6 right-4 md:top-8 md:right-8 z-[100] w-full max-w-sm">
+            <div className="flex items-start space-x-3 p-4 rounded-2xl border backdrop-blur-xl shadow-2xl animate-in fade-in slide-in-from-right-8 duration-300 bg-rose-500/10 border-rose-500/20">
+              <div className="flex-shrink-0 mt-0.5">
+                <Ban className="w-5 h-5 text-rose-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-semibold text-white">Error</h4>
+                <p className="text-xs text-gray-400 mt-1 line-clamp-2">{profileError}</p>
+              </div>
             </div>
           </div>
         )}
 
 
-        {/* Profile Header */}
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 overflow-hidden">
-            {/* Cover Image */}
-            <div className="relative h-48 md:h-64">
-              {user.coverImage ? (
-                <img 
-                  src={user.coverImage.startsWith('http') || user.coverImage.startsWith('data:image') ? user.coverImage : `${API_BASE_URL}${user.coverImage.startsWith('/') ? '' : '/'}${user.coverImage}`} 
-                  alt="Cover" 
-                  className="w-full h-full object-cover" 
-                  onError={(e) => {
-                    e.currentTarget.src = 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&h=600&fit=crop';
-                  }}
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-r from-pink-500/20 to-violet-500/20" />
-              )}
-              <div className="absolute inset-0 bg-black/20" />
-              
-              {/* Profile Navigation Overlays */}
-              <div className="absolute top-[10px] left-4 right-4 z-20 flex items-center justify-end md:justify-between">
-                <button 
-                  onClick={() => navigate('/')}
-                  className="hidden md:flex p-2.5 bg-black/40 backdrop-blur-md border border-white/20 rounded-2xl text-white hover:bg-black/60 transition-all group scale-100 active:scale-95"
-                >
-                  <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-                </button>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+          <div className="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-6 sm:p-10 mb-8 relative">
+            
+            {/* Top Left Back Button (Non-Mobile) */}
+            <button 
+              onClick={() => navigate(-1)}
+              className="hidden sm:flex absolute top-6 left-6 z-20 items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white rounded-xl transition-all font-medium border border-white/10"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
 
-                <div className="relative group/menu">
-                  <button
-                    onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="p-2.5 bg-black/40 backdrop-blur-md border border-white/20 rounded-2xl text-white hover:bg-black/60 transition-all scale-100 active:scale-95"
-                  >
-                    <MoreHorizontal className="w-5 h-5" />
-                  </button>
-                  
-                  {showUserMenu && (
-                    <div className="absolute right-0 top-full mt-2 bg-black/90 backdrop-blur-xl rounded-2xl border border-white/20 shadow-2xl py-2 min-w-48 z-50 animate-in fade-in zoom-in-95 duration-200">
-                      {isOwnProfile ? (
-                        <>
-                          <button
-                            onClick={() => {setShowEditModal(true); setShowUserMenu(false);}}
-                            className="w-full flex items-center space-x-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-all"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                            <span className="text-sm font-medium">Edit Profile</span>
-                          </button>
-                          <button className="w-full flex items-center space-x-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-all border-t border-white/5 mt-1 pt-3">
-                            <Settings className="w-4 h-4" />
-                            <span className="text-sm font-medium">Settings</span>
-                          </button>
-                          <button 
-                            onClick={handleLogout}
-                            className="w-full flex items-center space-x-3 px-4 py-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all border-t border-white/5 mt-1 pt-3"
-                          >
-                            <LogOut className="w-4 h-4" />
-                            <span className="text-sm font-medium">Sign Out</span>
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button className="w-full flex items-center space-x-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-all">
-                            <Flag className="w-4 h-4" />
-                            <span className="text-sm font-medium">Report User</span>
-                          </button>
-                          <button className="w-full flex items-center space-x-3 px-4 py-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all border-t border-white/5 mt-1 pt-3">
-                            <Ban className="w-4 h-4" />
-                            <span className="text-sm font-medium">Block User</span>
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
+            {/* Top Right Menu */}
+            <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20">
+              <div className="relative group/menu">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="p-2 text-white hover:bg-white/10 rounded-full transition-colors"
+                >
+                  <MoreHorizontal className="w-6 h-6" />
+                </button>
+                
+                {showUserMenu && (
+                  <div className="absolute right-0 top-full mt-2 bg-black/90 backdrop-blur-xl rounded-2xl border border-white/20 shadow-2xl py-2 min-w-48 animate-in fade-in zoom-in-95 duration-200">
+                    {isOwnProfile ? (
+                      <>
+                        <button
+                          onClick={handleEditProfileClick}
+                          className="w-full flex items-center space-x-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-all font-medium"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                          <span className="text-sm">Edit Profile</span>
+                        </button>
+                        <button className="w-full flex items-center space-x-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-all font-medium border-t border-white/5 mt-1 pt-3">
+                          <Settings className="w-4 h-4" />
+                          <span className="text-sm">Settings</span>
+                        </button>
+                        <button 
+                          onClick={handleLogout}
+                          className="w-full flex items-center space-x-3 px-4 py-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all border-t border-white/5 mt-1 pt-3 font-medium"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span className="text-sm">Sign Out</span>
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button className="w-full flex items-center space-x-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-all font-medium">
+                          <Flag className="w-4 h-4" />
+                          <span className="text-sm">Report User</span>
+                        </button>
+                        <button className="w-full flex items-center space-x-3 px-4 py-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all border-t border-white/5 mt-1 pt-3 font-medium">
+                          <Ban className="w-4 h-4" />
+                          <span className="text-sm">Block User</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="p-6 md:p-8">
-              {/* Profile Info */}
-              <div className="flex flex-col md:flex-row md:items-start md:space-x-6 -mt-16 md:-mt-20 relative">
-                <div className="relative mb-4 md:mb-0">
-                  <img
-                    src={user.avatar.startsWith('http') || user.avatar.startsWith('data:image') ? user.avatar : `${API_BASE_URL}${user.avatar.startsWith('/') ? '' : '/'}${user.avatar}`}
-                    alt={user.name}
-                    className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-white/20 bg-black/50"
-                    onError={(e) => {
-                      e.currentTarget.src = 'https://via.placeholder.com/150';
-                    }}
-                  />
-                  {user.role && getRoleIcon(user.role) && (
-                    <div className="absolute -bottom-2 -right-2 bg-gray-900 rounded-full p-2">
-                      {getRoleIcon(user.role)}
-                    </div>
-                  )}
-                </div>
+            <div className="flex flex-col sm:flex-row gap-8 sm:gap-12 md:gap-16 items-center sm:items-start max-w-4xl mx-auto">
+              {/* Avatar */}
+              <div className="flex-shrink-0 relative">
+                <img
+                  src={user.avatar.startsWith('http') || user.avatar.startsWith('data:image') ? user.avatar : `${API_BASE_URL}${user.avatar.startsWith('/') ? '' : '/'}${user.avatar}`}
+                  alt={user.name}
+                  className="w-32 h-32 sm:w-40 sm:h-40 object-cover rounded-full border border-white/20 bg-black/50 p-1"
+                  onError={(e) => {
+                    e.currentTarget.src = 'https://via.placeholder.com/150';
+                  }}
+                />
+                {user.role && getRoleIcon(user.role) && (
+                  <div className="absolute bottom-2 right-2 bg-gray-900 rounded-full p-2 border border-white/10 shadow-xl">
+                    {getRoleIcon(user.role)}
+                  </div>
+                )}
+              </div>
 
-                <div className="flex-1">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-                    <div>
-                      <div className="flex items-center space-x-3 mb-1">
-                        <h1 className="text-2xl md:text-3xl font-bold text-white">{user.name}</h1>
-                        {user.isVerified && (
-                          <Check className="w-6 h-6 text-green-400" />
-                        )}
-                      </div>
-                      <p className="text-gray-400 text-lg">@{user.username}</p>
-                    </div>
-
-                    <div className="flex items-center space-x-3 mt-4 sm:mt-0">
-                      {!isOwnProfile && (
-                        <>
-                          <button
-                            onClick={handleSubscribe}
-                            className={`px-6 py-3 rounded-xl font-medium transition-all ${
-                              isSubscribed
-                                ? 'bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30'
-                                : 'bg-gradient-to-r from-pink-500 to-violet-500 text-white hover:shadow-lg'
-                            }`}
-                          >
-                            {isSubscribed ? (
-                              <span className="flex items-center space-x-2">
-                                <UserCheck className="w-4 h-4" />
-                                <span>Subscribed</span>
-                              </span>
-                            ) : (
-                              <span className="flex items-center space-x-2">
-                                <UserPlus className="w-4 h-4" />
-                                <span>Subscribe</span>
-                              </span>
-                            )}
-                          </button>
-                        </>
-                      )}
-                    </div>
+              {/* Info */}
+              <div className="flex-1 w-full flex flex-col items-center sm:items-start sm:min-h-[160px]">
+                {/* Row 1: Username & Actions */}
+                <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mb-4">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl sm:text-2xl font-normal text-white">{user.name || user.username}</h2>
+                    {user.isVerified && <Check className="w-5 h-5 text-blue-400" />}
                   </div>
 
-                  <p className="text-gray-300 leading-relaxed mb-6 max-w-2xl">{user.bio}</p>
+                  <div className="flex items-center gap-3">
+                    {!isOwnProfile && (
+                        <button
+                          onClick={handleSubscribe}
+                          className={`px-6 py-1.5 rounded-lg font-semibold transition-all text-sm ${
+                            isSubscribed
+                              ? 'bg-white/10 text-white hover:bg-white/20'
+                              : 'bg-blue-500 text-white hover:bg-blue-600'
+                          }`}
+                        >
+                          {isSubscribed ? 'Following' : 'Follow'}
+                        </button>
+                    )}
+                  </div>
+                </div>
 
-                  {/* User Info */}
-                  <div className="flex flex-wrap items-center gap-6 text-sm text-gray-400 mb-6">
-                    <span className="flex items-center space-x-2">
-                      <MapPin className="w-4 h-4" />
-                      <span>{user.location}</span>
-                    </span>
-                    <span className="flex items-center space-x-2">
-                      <Calendar className="w-4 h-4" />
-                      <span>Joined {user.joinDate}</span>
-                    </span>
-                    {user.website && (
+                {/* Row 2: Stats */}
+                <div className="flex justify-center sm:justify-start gap-8 sm:gap-10 mb-6 w-full border-y border-white/10 py-4 sm:border-none sm:py-0">
+                  <div className="flex flex-col sm:flex-row items-center gap-1">
+                    <span className="font-semibold text-white">{user.stats.posts}</span>
+                    <span className="text-gray-300 text-sm sm:text-base">posts</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row items-center gap-1">
+                    <span className="font-semibold text-white">{user.stats.followers.toLocaleString()}</span>
+                    <span className="text-gray-300 text-sm sm:text-base">{user.stats.followers === 1 ? 'follower' : 'followers'}</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row items-center gap-1">
+                    <span className="font-semibold text-white">{user.stats.following}</span>
+                    <span className="text-gray-300 text-sm sm:text-base">following</span>
+                  </div>
+                </div>
+
+                {/* Row 3: Name & Bio */}
+                <div className="text-center sm:text-left w-full space-y-1 mb-6">
+                  <div className="font-semibold text-gray-300 text-[15px]">@{user.username}</div>
+                  {user.bio && (
+                    <p className="text-gray-100 text-[15px] whitespace-pre-wrap leading-tight mt-1">{user.bio}</p>
+                  )}
+                  
+                  {/* Additional Info / Links */}
+                  {user.website && (
+                    <div className="flex flex-wrap justify-center sm:justify-start items-center gap-x-3 gap-y-1 mt-2 text-sm">
                       <a 
                         href={user.website} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="flex items-center space-x-2 text-pink-400 hover:text-pink-300 transition-colors"
+                        className="flex items-center space-x-1 text-[#e0f1ff] hover:text-white transition-colors font-semibold"
                       >
-                        <Globe className="w-4 h-4" />
-                        <span>{user.website.replace('https://', '')}</span>
+                        <LinkIcon className="w-3.5 h-3.5" />
+                        <span>{user.website.replace(/^https?:\/\//, '')}</span>
                       </a>
-                    )}
-                    {user.preferences.showEmail && (
-                      <span className="flex items-center space-x-2">
-                        <Mail className="w-4 h-4" />
-                        <span>{user.email}</span>
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Stats */}
-                  <div className="grid grid-cols-3 gap-2 sm:gap-4 md:flex md:items-center md:space-x-8">
-                    <div className="text-center md:text-left">
-                      <div className="text-xl md:text-2xl font-bold text-white">{user.stats.posts}</div>
-                      <div className="text-xs md:text-sm text-gray-400">Posts</div>
                     </div>
-                    <div className="text-center md:text-left">
-                      <div className="text-xl md:text-2xl font-bold text-white">{user.stats.followers.toLocaleString()}</div>
-                      <div className="text-xs md:text-sm text-gray-400">Followers</div>
-                    </div>
-                    <div className="text-center md:text-left">
-                      <div className="text-xl md:text-2xl font-bold text-white">{user.stats.following}</div>
-                      <div className="text-xs md:text-sm text-gray-400">Following</div>
-                    </div>
-                  </div>
-
+                  )}
+                  
                   {/* Social Links */}
                   {(user.socialLinks.twitter || user.socialLinks.instagram || user.socialLinks.github) && (
-                    <div className="flex items-center space-x-4 mt-6 pt-6 border-t border-white/10">
+                    <div className="flex justify-center sm:justify-start items-center space-x-4 pt-3">
                       {user.socialLinks.twitter && (
-                        <a 
-                          href={user.socialLinks.twitter} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-all"
-                        >
+                        <a href={user.socialLinks.twitter} target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white transition-colors">
                           <Twitter className="w-5 h-5" />
                         </a>
                       )}
                       {user.socialLinks.instagram && (
-                        <a 
-                          href={user.socialLinks.instagram} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="p-2 text-pink-400 hover:text-pink-300 hover:bg-pink-500/10 rounded-lg transition-all"
-                        >
+                        <a href={user.socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white transition-colors">
                           <Instagram className="w-5 h-5" />
                         </a>
                       )}
                       {user.socialLinks.github && (
-                        <a 
-                          href={user.socialLinks.github} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-all"
-                        >
+                        <a href={user.socialLinks.github} target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white transition-colors">
                           <Github className="w-5 h-5" />
                         </a>
                       )}
@@ -1311,6 +1248,7 @@ const UserProfilePage: React.FC = () => {
         onClose={() => setShowEditModal(false)}
         onSave={handleSaveProfile}
       />
+    </div>
     </div>
   );
 };

@@ -20,14 +20,14 @@ export const formatTimeAgo = (date: string | Date | undefined): string => {
     const seconds = Math.floor((now.getTime() - past.getTime()) / 1000);
 
     // DEBUG: Comprehensive log for timezone and shift troubleshooting
-    console.log(`[TimeAgo]
-      Input: "${date}"
-      Parsed Date: ${past.toString()}
-      Parsed UTC: ${past.toUTCString()}
-      Parsed Local: ${past.toLocaleString()}
-      Current Client: ${now.toLocaleString()}
-      Diff (sec): ${seconds}
-      Diff (hrs): ${(seconds / 3600).toFixed(2)}h`);
+    // console.log(`[TimeAgo]
+    //   Input: "${date}"
+    //   Parsed Date: ${past.toString()}
+    //   Parsed UTC: ${past.toUTCString()}
+    //   Parsed Local: ${past.toLocaleString()}
+    //   Current Client: ${now.toLocaleString()}
+    //   Diff (sec): ${seconds}
+    //   Diff (hrs): ${(seconds / 3600).toFixed(2)}h`);
 
     // Handle slight server/client clock skew
     if (Math.abs(seconds) < 30) return 'now';

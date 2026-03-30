@@ -24,6 +24,14 @@ export interface UserProfileData {
     coverImage: string | null;
 }
 
+export interface UserDetailsReqDto {
+    username: string;
+    name: string;
+    email: string;
+    profilePicUrl: string;
+    bio: string;
+}
+
 interface UserProfileState {
     data: UserProfileData | null;
     posts: any[];
@@ -46,7 +54,7 @@ export const fetchUserDetails = createAsyncThunk(
     'userProfile/fetchDetails',
     async (userId: string, { rejectWithValue }) => {
         try {
-            const response = await api.get(`/user/details/?bloggerId=${userId}`);
+            const response = await api.get(`/user/details?bloggerId=${userId}`);
             console.log('📡 User Details Response:', response);
             if (response && response.data) {
                 return response.data as UserProfileData;
@@ -74,6 +82,25 @@ export const fetchUserPosts = createAsyncThunk(
         } catch (error: any) {
             return rejectWithValue(
                 error.response?.data?.message || error.message || 'Failed to fetch user posts'
+            );
+        }
+    }
+);
+
+export const modifyUserDetails = createAsyncThunk(
+    'userProfile/modifyDetails',
+    async (req: UserDetailsReqDto, { rejectWithValue }) => {
+        console.log('📡 [Slice] modifyUserDetails initiated with:', req);
+        try {
+            const response = await api.post('/user/modify/details', req);
+            console.log('✅ [Slice] modifyUserDetails success:', response);
+            // Since the interceptor already returns response.data, 'response' here IS the body.
+            // If the body has a 'data' property, return it, otherwise return the whole body.
+            return response.data || response;
+        } catch (error: any) {
+            console.error('❌ [Slice] modifyUserDetails failed:', error);
+            return rejectWithValue(
+                error.response?.data?.message || error.message || 'Failed to modify profile'
             );
         }
     }
@@ -120,6 +147,19 @@ const userProfileSlice = createSlice({
             .addCase(fetchUserPosts.rejected, (state, action) => {
                 state.isPostsLoading = false;
                 state.postsError = action.payload as string;
+            })
+            .addCase(modifyUserDetails.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(modifyUserDetails.fulfilled, (state, action: PayloadAction<UserProfileData>) => {
+                state.isLoading = false;
+                state.data = action.payload;
+                state.error = null;
+            })
+            .addCase(modifyUserDetails.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload as string;
             });
     },
 });
