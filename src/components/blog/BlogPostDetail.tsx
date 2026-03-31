@@ -462,7 +462,7 @@ const BlogPostDetail: React.FC = () => {
                   id: currentUser?.id?.toString() || "guest",
                   name: currentUser?.username || "Guest",
                   username: currentUser?.username || "guest",
-                  profilePictureUrl: currentUser?.profilePictureUrl,
+                  profilePictureUrl: currentUser?.profilePictureUrl ||"",
                   role: currentUser?.role
                 }}
                 comments={comments} 

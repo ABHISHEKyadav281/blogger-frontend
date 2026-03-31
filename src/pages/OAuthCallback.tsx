@@ -35,7 +35,7 @@ export default function OAuthCallback() {
             username: decoded.sub,
             email: decoded.email,
             name: decoded.userName || decoded.sub,
-            avatar: decoded.picture || '',
+            profilePictureUrl: decoded.picture || '',
             isVerified: false,
             role: 'user',
             stats: { posts: 0, followers: 0, following: 0 }

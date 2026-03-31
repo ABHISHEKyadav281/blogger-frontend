@@ -200,7 +200,7 @@ const AuthPage: React.FC = () => {
             name: formData.username,
             username: formData.username,
             email: decoded.email,
-            avatar: "",
+            profilePictureUrl: "",
             isVerified: false,
             role: "user",
             stats: {
