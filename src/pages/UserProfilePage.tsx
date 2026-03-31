@@ -921,7 +921,7 @@ const UserProfilePage: React.FC = () => {
   const handleSaveProfile = async (updatedUser: User, avatarFile?: File | null, coverFile?: File | null) => {
     console.log('💾 handleSaveProfile initiated with:', updatedUser, avatarFile, coverFile);
     
-    let profilePicUrl = updatedUser.avatar;
+    let profilePicUrl = updatedUser.profilePictureUrl;
     let coverImageUrl = updatedUser.coverImage;
 
     try {
