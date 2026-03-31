@@ -242,7 +242,7 @@ const EditProfileModal: React.FC<{
   user: User;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (updatedUser: Partial<User>) => void;
+  onSave: (updatedUser: User) => Promise<void> | void;
 }> = ({ user, isOpen, onClose, onSave }) => {
   const [editedUser, setEditedUser] = useState(user);
   const [activeTab, setActiveTab] = useState<'profile' | 'social' | 'privacy'>('profile');

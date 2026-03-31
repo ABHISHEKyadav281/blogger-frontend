@@ -1,16 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
-  Image, 
-  Video, 
   Link, 
   Bold, 
   Italic, 
-  Underline,
   List,
-  Hash,
   Quote,
-  Code,
-  Smile,
   Type,
 } from 'lucide-react';
 
