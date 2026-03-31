@@ -431,7 +431,7 @@ const EditProfileModal: React.FC<{
   const handleCropComplete = (croppedFile: File, previewUrl: string) => {
     if (croppingType === 'avatar') {
       setAvatarFile(croppedFile);
-      setEditedUser(prev => ({ ...prev, avatar: previewUrl }));
+      setEditedUser(prev => ({ ...prev, profilePictureUrl: previewUrl }));
     } else if (croppingType === 'cover') {
       setCoverFile(croppedFile);
       setEditedUser(prev => ({ ...prev, coverImage: previewUrl }));
@@ -927,27 +927,48 @@ const UserProfilePage: React.FC = () => {
     try {
       // 1. Handle Avatar Upload to S3 if file changed
       if (avatarFile) {
-        console.log('📤 Uploading avatar to S3...');
+        console.log('📤 Uploading avatar to S3...', avatarFile.name, avatarFile.type);
         try {
           // Get Presigned URL
           const response = await api.post('/user/profile/upload-url', {
             fileName: avatarFile.name,
             contentType: avatarFile.type
           }) as any;
-          const { uploadUrl, key } = response.data;
+          
+          console.log('📡 Presigned URL response:', response);
+          
+          // The interceptor in api.ts returns response.data already.
+          // Support both { data: { uploadUrl, key } } and { uploadUrl, key } structures just in case.
+          const uploadData = response?.data || response;
+          const { uploadUrl, key } = uploadData;
 
-          // Push to S3 (Use native fetch or axios without global interceptors to avoid auth headers)
-          await axios.put(uploadUrl, avatarFile, {
+          if (!uploadUrl) {
+            console.error('❌ No uploadUrl found in response:', uploadData);
+            throw new Error('Failed to get upload URL from server');
+          }
+
+          console.log('🚀 Putting file to S3:', uploadUrl.substring(0, 50) + '...', 'Key:', key);
+
+          // Push to S3 using native fetch to avoid any axios global interceptors/headers
+          const s3Response = await fetch(uploadUrl, {
+            method: 'PUT',
+            body: avatarFile,
             headers: {
               'Content-Type': avatarFile.type
             }
           });
+
+          if (!s3Response.ok) {
+            const errorText = await s3Response.text();
+            console.error('❌ S3 Upload failed:', s3Response.status, errorText);
+            throw new Error(`S3 upload failed with status ${s3Response.status}`);
+          }
           
           profilePicUrl = key; // Use the key/path returned from API
-          console.log('✅ Avatar uploaded to S3:', profilePicUrl);
+          console.log('✅ Avatar uploaded to S3 successfully:', profilePicUrl);
         } catch (uploadErr) {
           console.error('❌ Failed to upload avatar to S3:', uploadErr);
-          throw new Error('Avatar upload failed');
+          throw new Error('Avatar upload failed: ' + (uploadErr instanceof Error ? uploadErr.message : String(uploadErr)));
         }
       }
 
