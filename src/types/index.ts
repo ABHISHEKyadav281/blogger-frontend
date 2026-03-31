@@ -3,7 +3,8 @@ export interface User {
   name: string;
   username: string;
   email: string;
-  avatar: string;
+  profilePictureUrl: string;
+  profileImage?: string; // S3 Key or URL coming from legacy API
   isVerified: boolean;
   role: 'admin' | 'moderator' | 'verified' | 'user';
   bio?: string;
@@ -61,7 +62,7 @@ export interface Notification {
   // Backend specific / legacy fields
   authorName?: string;
   from?: string;
-  avatar?: string;
+  profilePictureUrl?: string;
   createdAt?: string;
   timestamp?: string;
   userId?: string | number;

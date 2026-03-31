@@ -4,11 +4,12 @@ import { fetchSubscriptions, toggleSubscription } from '../redux/slices/userSubs
 import { Loader2, Users, ArrowLeft, UserMinus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
+import { resolveAvatarUrl } from '../utils/urlUtils';
 
 interface UserProfile {
     id: string;
     username: string;
-    avatar: string;
+    profilePictureUrl: string;
     name: string;
     bio: string;
 }
@@ -143,7 +144,7 @@ const MyFollowsPage: React.FC = () => {
                         {followedUsers.map((user) => (
                             <div key={user.id} className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 p-6 flex flex-col items-center text-center hover:shadow-2xl transition-all">
                                 <img 
-                                    src={user.avatar || 'https://via.placeholder.com/100'} 
+                                    src={resolveAvatarUrl(user.profilePictureUrl, user.username)} 
                                     alt={user.username}
                                     className="w-24 h-24 rounded-full border-4 border-white/20 mb-4 object-cover"
                                 />

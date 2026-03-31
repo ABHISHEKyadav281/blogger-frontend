@@ -46,8 +46,22 @@ if (savedToken) {
   }
 }
 
+const getInitialUser = () => {
+    if (!savedUser || !isTokenValid) return null;
+    try {
+        const user = JSON.parse(savedUser);
+        // Migration of field from avatar to profilePictureUrl
+        if (user.avatar && !user.profilePictureUrl) {
+            user.profilePictureUrl = user.avatar;
+        }
+        return user;
+    } catch {
+        return null;
+    }
+};
+
 const initialState: AuthState = {
-  user: savedUser && isTokenValid ? JSON.parse(savedUser) : null,
+  user: getInitialUser(),
   isAuthenticated: isTokenValid,
   token: isTokenValid ? savedToken : null,
   isLoading: false,

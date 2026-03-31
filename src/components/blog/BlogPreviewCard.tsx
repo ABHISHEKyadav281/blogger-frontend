@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Eye,
@@ -6,14 +6,53 @@ import {
   Clock,
   Share2
 } from 'lucide-react';
-import { useState } from 'react';
 import ShareModal from './ShareModal';
 import ImageModal from '../ui/ImageModal';
 import { useAppDispatch } from '../../redux/slices/hooks';
-
 import { API_BASE_URL } from '../../config';
 import type { BlogPost } from '../../types';
 import { formatTimeAgo } from '../../utils/dateUtils';
+import { resolveAvatarUrl, resolveImageUrl } from '../../utils/urlUtils';
+
+const AuthorAvatar: React.FC<{ 
+  url: string | null | undefined; 
+  username?: string; 
+  size?: 'sm' | 'md' | 'lg';
+  onClick?: (e: React.MouseEvent) => void;
+}> = ({ url, username, size = 'sm', onClick }) => {
+  const [hasError, setHasError] = useState(false);
+  
+  useEffect(() => {
+    setHasError(false);
+  }, [url]);
+
+  const sizes = {
+    sm: 'w-10 h-10 text-lg',
+    md: 'w-14 h-14 text-2xl',
+    lg: 'w-20 h-20 text-3xl'
+  };
+
+  if (!url || hasError) {
+    return (
+      <div 
+        className={`${sizes[size]} rounded-full bg-gradient-to-br from-primary to-rose-600 flex items-center justify-center text-white font-bold uppercase cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all shadow-lg ring-2 ring-white/10`}
+        onClick={onClick}
+      >
+        {(username || 'U').charAt(0)}
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={resolveAvatarUrl(url, username)}
+      alt={username || "Author"}
+      className={`${sizes[size]} rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all`}
+      onClick={onClick}
+      onError={() => setHasError(true)}
+    />
+  );
+};
 
 interface BlogPreviewCardProps {
   post: BlogPost;
@@ -56,10 +95,7 @@ const BlogPreviewCard: React.FC<BlogPreviewCardProps> = ({ post }) => {
 
     // Check for coverImage (URL)
     if (post.coverImage) {
-        if (post.coverImage.startsWith('http')) return post.coverImage;
-        // If relative path, prepend backend URL? Or maybe it's base64 without prefix?
-        // Let's assume it might be relative path served by backend static files
-        return `${API_BASE_URL}${post.coverImage.startsWith('/') ? '' : '/'}${post.coverImage}`;
+        return resolveImageUrl(post.coverImage);
     }
     
     return "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&h=600&fit=crop";
@@ -114,38 +150,15 @@ const BlogPreviewCard: React.FC<BlogPreviewCardProps> = ({ post }) => {
         {/* Author Info */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-4"> {/* Gap profile pic and author name */}
-            {post.author?.avatar ? (
-              <img
-                src={post.author.avatar.startsWith('http') ? post.author.avatar : `${API_BASE_URL}${post.author.avatar.startsWith('/') ? '' : '/'}${post.author.avatar}`}
-                alt={post.author?.username}
-                className="w-10 h-10 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (post.author?.id) navigate(`/profile/${post.author.id}`);
-                }}
-                onError={(e) => {
-                  // Fallback if image fails to load during runtime
-                  e.currentTarget.style.display = 'none';
-                  const parent = e.currentTarget.parentElement;
-                  if (parent) {
-                    const fallback = document.createElement('div');
-                    fallback.className = "w-10 h-10 rounded-full bg-gradient-to-br from-primary to-rose-600 flex items-center justify-center text-white font-bold text-lg uppercase shadow-lg ring-2 ring-white/10";
-                    fallback.innerText = (post.author?.username || post.author?.name || 'U').charAt(0);
-                    parent.appendChild(fallback);
-                  }
-                }}
-              />
-            ) : (
-              <div 
-                className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-rose-600 flex items-center justify-center text-white font-bold text-lg uppercase cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all shadow-lg ring-2 ring-white/10"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (post.author?.id) navigate(`/profile/${post.author.id}`);
-                }}
-              >
-                {(post.author?.username || post.author?.name || 'U').charAt(0)}
-              </div>
-            )}
+            <AuthorAvatar 
+              url={post.author?.profilePictureUrl || post.author?.profileImage} 
+              username={post.author?.username} 
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (post.author?.id) navigate(`/profile/${post.author.id}`);
+              }}
+            />
             <div>
               <p 
                 className="font-bold text-lg text-white mb-1 capitalize cursor-pointer hover:text-primary transition-colors"

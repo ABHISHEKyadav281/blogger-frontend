@@ -1,8 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import axios from 'axios';
+import Cropper from 'react-easy-crop';
+import getCroppedImg from '../utils/cropImage';
+import { resolveAvatarUrl, resolveImageUrl } from '../utils/urlUtils';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../redux/slices/hooks';
 import { fetchUserDetails, fetchUserPosts, modifyUserDetails, type UserDetailsReqDto } from '../redux/slices/userProfileSlice';
-import { logout } from '../redux/slices/authSlice';
+import { logout, updateUser } from '../redux/slices/authSlice';
 import api from '../utils/api';
 import { API_BASE_URL } from '../config';
 import { 
@@ -53,7 +57,7 @@ interface User {
   id: string;
   name: string;
   username: string;
-  avatar: string;
+  profilePictureUrl: string;
   coverImage?: string;
   bio: string;
   location: string;
@@ -99,6 +103,7 @@ interface Post {
     isLiked: boolean;
     isBookmarked: boolean;
   };
+  viewsCount?: number;
   status: 'published' | 'draft' | 'scheduled';
 }
 
@@ -115,7 +120,7 @@ const emptyUser: User = {
   id: '',
   name: '',
   username: '',
-  avatar: '',
+  profilePictureUrl: '',
   coverImage: '',
   bio: '',
   location: '',
@@ -159,7 +164,7 @@ const PostCard: React.FC<{
            onClick={() => onView(post.id)}>
         <div className="flex">
           <img 
-            src={post.coverImage.startsWith('http') ? post.coverImage : `${API_BASE_URL}${post.coverImage.startsWith('/') ? '' : '/'}${post.coverImage}`} 
+            src={resolveImageUrl(post.coverImage)} 
             alt={post.title}
             className="w-48 h-32 object-cover flex-shrink-0"
             onError={(e) => {
@@ -179,7 +184,7 @@ const PostCard: React.FC<{
               <div className="flex items-center space-x-4 text-sm text-gray-400">
                 <span className="flex items-center space-x-1">
                   <Eye className="w-4 h-4" />
-                  <span>{post.stats.views}</span>
+                  <span>{post.viewsCount }</span>
                 </span>
                 <span className="flex items-center space-x-1">
                   <Clock className="w-4 h-4" />
@@ -197,7 +202,7 @@ const PostCard: React.FC<{
     <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 overflow-hidden hover:shadow-2xl transition-all duration-300 hover:transform hover:scale-[1.02] cursor-pointer"
          onClick={() => onView(post.id)}>
       <img 
-        src={post.coverImage.startsWith('http') ? post.coverImage : `${API_BASE_URL}${post.coverImage.startsWith('/') ? '' : '/'}${post.coverImage}`} 
+        src={resolveImageUrl(post.coverImage)} 
         alt={post.title}
         className="w-full h-40 object-cover"
         onError={(e) => {
@@ -224,7 +229,7 @@ const PostCard: React.FC<{
           <div className="flex items-center space-x-3 text-sm text-gray-400">
             <span className="flex items-center space-x-1">
               <Eye className="w-3 h-3" />
-              <span>{post.stats.views}</span>
+              <span>{post.viewsCount }</span>
             </span>
             <span className="flex items-center space-x-1">
               <Clock className="w-3 h-3" />
@@ -237,17 +242,120 @@ const PostCard: React.FC<{
   );
 };
 
+
+
+// Image Crop Modal Component
+const CropModal: React.FC<{
+  image: string;
+  onCropComplete: (croppedImage: File, previewUrl: string) => void;
+  onCancel: () => void;
+  aspect?: number;
+}> = ({ image, onCropComplete, onCancel, aspect = 1 }) => {
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+
+  const onCropChange = (crop: { x: number; y: number }) => {
+    setCrop(crop);
+  };
+
+  const onZoomChange = (zoom: number) => {
+    setZoom(zoom);
+  };
+
+  const onCropCompleteInternal = useCallback((_croppedArea: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const handleDone = async () => {
+    try {
+      const croppedFile = await getCroppedImg(image, croppedAreaPixels);
+      if (croppedFile) {
+        const previewUrl = URL.createObjectURL(croppedFile);
+        onCropComplete(croppedFile, previewUrl);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+      <div className="bg-zinc-900 rounded-3xl border border-white/10 w-full max-w-lg overflow-hidden flex flex-col">
+        <div className="p-6 border-b border-white/10 flex justify-between items-center">
+          <h3 className="text-xl font-bold text-white">Crop Image</h3>
+          <button onClick={onCancel} className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-all">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+        
+        <div className="relative h-96 w-full bg-black">
+          <Cropper
+            image={image}
+            crop={crop}
+            zoom={zoom}
+            aspect={aspect}
+            onCropChange={onCropChange}
+            onCropComplete={onCropCompleteInternal}
+            onZoomChange={onZoomChange}
+            cropShape={aspect === 1 ? 'round' : 'rect'}
+            showGrid={true}
+          />
+        </div>
+
+        <div className="p-6 space-y-6">
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Zoom</span>
+              <span className="text-white font-medium">{Math.round(zoom * 100)}%</span>
+            </div>
+            <input
+              type="range"
+              value={zoom}
+              min={1}
+              max={3}
+              step={0.1}
+              aria-labelledby="Zoom"
+              onChange={(e) => setZoom(Number(e.target.value))}
+              className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-pink-500"
+            />
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={onCancel}
+              className="flex-1 py-3 px-4 bg-white/5 hover:bg-white/10 text-white rounded-xl font-medium transition-all"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDone}
+              className="flex-1 py-3 px-4 bg-gradient-to-r from-pink-500 to-violet-500 text-white rounded-xl font-medium shadow-lg hover:shadow-pink-500/20 transition-all"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Edit Profile Modal
 const EditProfileModal: React.FC<{
   user: User;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (updatedUser: User) => Promise<void> | void;
+  onSave: (updatedUser: User, avatarFile?: File | null, coverFile?: File | null) => Promise<void> | void;
 }> = ({ user, isOpen, onClose, onSave }) => {
   const [editedUser, setEditedUser] = useState(user);
   const [activeTab, setActiveTab] = useState<'profile' | 'social' | 'privacy'>('profile');
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  const [croppingType, setCroppingType] = useState<'avatar' | 'cover' | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -269,7 +377,9 @@ const EditProfileModal: React.FC<{
   if (!isOpen) return null;
 
   const handleSave = () => {
-    onSave(editedUser);
+    // If we have local files, we might want to handle them differently
+    // For now we just pass them along to the parent which handles the logic
+    onSave(editedUser, avatarFile, coverFile);
     onClose();
   };
 
@@ -299,7 +409,8 @@ const EditProfileModal: React.FC<{
     if (file && validateFile(file)) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        setEditedUser(prev => ({ ...prev, avatar: e.target?.result as string }));
+        setImageToCrop(e.target?.result as string);
+        setCroppingType('avatar');
       };
       reader.readAsDataURL(file);
     }
@@ -310,10 +421,23 @@ const EditProfileModal: React.FC<{
     if (file && validateFile(file)) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        setEditedUser(prev => ({ ...prev, coverImage: e.target?.result as string }));
+        setImageToCrop(e.target?.result as string);
+        setCroppingType('cover');
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleCropComplete = (croppedFile: File, previewUrl: string) => {
+    if (croppingType === 'avatar') {
+      setAvatarFile(croppedFile);
+      setEditedUser(prev => ({ ...prev, avatar: previewUrl }));
+    } else if (croppingType === 'cover') {
+      setCoverFile(croppedFile);
+      setEditedUser(prev => ({ ...prev, coverImage: previewUrl }));
+    }
+    setImageToCrop(null);
+    setCroppingType(null);
   };
 
   return (
@@ -364,11 +488,11 @@ const EditProfileModal: React.FC<{
                 <div className="flex items-center space-x-4">
                   <div className="relative">
                     <img
-                      src={editedUser.avatar.startsWith('http') || editedUser.avatar.startsWith('data:image') ? editedUser.avatar : `${API_BASE_URL}${editedUser.avatar.startsWith('/') ? '' : '/'}${editedUser.avatar}`}
+                      src={resolveAvatarUrl(editedUser.profilePictureUrl, editedUser.username)}
                       alt="Avatar"
                       className="w-20 h-20 rounded-full border-4 border-white/20"
                       onError={(e) => {
-                        e.currentTarget.src = 'https://via.placeholder.com/150';
+                        e.currentTarget.src = '';
                       }}
                     />
                     <button
@@ -428,6 +552,18 @@ const EditProfileModal: React.FC<{
 
 
             </div>
+          )}
+
+          {imageToCrop && (
+            <CropModal
+              image={imageToCrop}
+              aspect={croppingType === 'avatar' ? 1 : 16 / 9}
+              onCropComplete={handleCropComplete}
+              onCancel={() => {
+                setImageToCrop(null);
+                setCroppingType(null);
+              }}
+            />
           )}
 
           {activeTab === 'social' && (
@@ -629,7 +765,7 @@ const UserProfilePage: React.FC = () => {
           ? `${profileData.firstName} ${profileData.lastName}` 
           : (profileData.name || profileData.username),
         username: profileData.username,
-        avatar: profileData.profileImage || `https://ui-avatars.com/api/?name=${profileData.username}&background=random`,
+        profilePictureUrl: profileData.profilePictureUrl || profileData.profileImage || `https://ui-avatars.com/api/?name=${profileData.username}&background=random`,
         coverImage: profileData.coverImage || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&h=400&fit=crop',
         bio: profileData.bio || '',
         location: profileData.location || '',
@@ -782,14 +918,52 @@ const UserProfilePage: React.FC = () => {
     setShowEditModal(true);
   };
 
-  const handleSaveProfile = async (updatedUser: User) => {
-    console.log('💾 handleSaveProfile initiated with:', updatedUser);
+  const handleSaveProfile = async (updatedUser: User, avatarFile?: File | null, coverFile?: File | null) => {
+    console.log('💾 handleSaveProfile initiated with:', updatedUser, avatarFile, coverFile);
+    
+    let profilePicUrl = updatedUser.avatar;
+    let coverImageUrl = updatedUser.coverImage;
+
     try {
+      // 1. Handle Avatar Upload to S3 if file changed
+      if (avatarFile) {
+        console.log('📤 Uploading avatar to S3...');
+        try {
+          // Get Presigned URL
+          const response = await api.post('/user/profile/upload-url', {
+            fileName: avatarFile.name,
+            contentType: avatarFile.type
+          }) as any;
+          const { uploadUrl, key } = response.data;
+
+          // Push to S3 (Use native fetch or axios without global interceptors to avoid auth headers)
+          await axios.put(uploadUrl, avatarFile, {
+            headers: {
+              'Content-Type': avatarFile.type
+            }
+          });
+          
+          profilePicUrl = key; // Use the key/path returned from API
+          console.log('✅ Avatar uploaded to S3:', profilePicUrl);
+        } catch (uploadErr) {
+          console.error('❌ Failed to upload avatar to S3:', uploadErr);
+          throw new Error('Avatar upload failed');
+        }
+      }
+
+      // 2. Handle Cover Image Upload to S3 if file changed (If implemented similarly)
+      if (coverFile) {
+          // Assuming same endpoint or similar for cover image
+          // For now just logging
+          console.log('📤 Uploading cover image to S3 (placeholder)...');
+      }
+
+      // 3. Final Profile Update in DB
       const updateDto: UserDetailsReqDto = {
         username: updatedUser.username,
         name: updatedUser.name,
         email: updatedUser.email,
-        profilePicUrl: updatedUser.avatar,
+        profilePicUrl: profilePicUrl, // Use the S3 link/key
         bio: updatedUser.bio || ''
       };
 
@@ -798,7 +972,11 @@ const UserProfilePage: React.FC = () => {
       console.log('✅ Profile updated successfully:', result);
       
       // Update local state if needed
-      setUser(prev => ({ ...prev, ...updatedUser }));
+      setUser(prev => ({ ...prev, ...updatedUser, profilePictureUrl: profilePicUrl }));
+      
+      // Update global auth state so navbar reflects the change
+      dispatch(updateUser({ profilePictureUrl: profilePicUrl }));
+      
       setShowEditModal(false); // Close modal only on success
     } catch (err) {
       console.error('❌ Failed to update profile:', err);
@@ -918,11 +1096,11 @@ const UserProfilePage: React.FC = () => {
               {/* Avatar */}
               <div className="flex-shrink-0 relative">
                 <img
-                  src={user.avatar.startsWith('http') || user.avatar.startsWith('data:image') ? user.avatar : `${API_BASE_URL}${user.avatar.startsWith('/') ? '' : '/'}${user.avatar}`}
+                  src={resolveAvatarUrl(user.profilePictureUrl, user.username)}
                   alt={user.name}
                   className="w-32 h-32 sm:w-40 sm:h-40 object-cover rounded-full border border-white/20 bg-black/50 p-1"
                   onError={(e) => {
-                    e.currentTarget.src = 'https://via.placeholder.com/150';
+                    e.currentTarget.src = '';
                   }}
                 />
                 {user.role && getRoleIcon(user.role) && (
