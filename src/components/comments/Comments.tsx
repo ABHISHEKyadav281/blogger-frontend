@@ -18,13 +18,14 @@ import {
 } from 'lucide-react';
 import { useAppDispatch } from '../../redux/slices/hooks';
 import { addToast } from '../../redux/slices/uiSlice';
+import { resolveAvatarUrl } from '../../utils/urlUtils';
 
 // Types
 interface User {
   id: string;
   name: string;
   username: string;
-  avatar: string;
+  profilePictureUrl: string;
   role?: 'admin' | 'moderator' | 'verified' | 'user';
 }
 
@@ -109,7 +110,7 @@ const CommentComposer: React.FC<{
     <div className={`${isReply ? 'bg-white/5 rounded-2xl p-4 border border-white/10' : 'glass-panel rounded-2xl p-6 mb-8 shadow-2xl relative z-10'}`}>
       <div className="flex space-x-4">
         <img
-          src={currentUser?.avatar || 'https://via.placeholder.com/40'}
+          src={resolveAvatarUrl(currentUser?.profilePictureUrl, currentUser?.username)}
           alt={currentUser?.name || 'User'}
           className="w-10 h-10 rounded-full border-2 border-white/20 flex-shrink-0"
         />
@@ -290,7 +291,7 @@ const CommentItem: React.FC<{
       <div className={`flex space-x-3 ${comment.isPinned ? 'bg-yellow-500/10 border border-yellow-500/20 rounded-2xl p-4' : ''}`}>
         <div className="relative">
           <img 
-            src={comment?.author?.avatar || 'https://via.placeholder.com/40'} 
+            src={resolveAvatarUrl(comment?.author?.profilePictureUrl, comment?.author?.username)} 
             alt={comment?.author?.name || 'User'}
             className="w-10 h-10 rounded-full border-2 border-white/20"
           />

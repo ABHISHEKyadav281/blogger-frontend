@@ -26,11 +26,9 @@ import { useAppDispatch, useAppSelector } from '../../redux/slices/hooks';
 import { logout } from '../../redux/slices/authSlice';
 import { setFilters } from '../../redux/slices/postsListSlice';
 import { fetchUnreadCount, fetchNotifications } from '../../redux/slices/notificationSlice';
+import { resolveAvatarUrl } from '../../utils/urlUtils';
 
-const getAvatarFallback = (username?: string) => {
-  const char = username ? username.charAt(0) : 'U';
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(char)}&background=random&color=fff&uppercase=false`;
-};
+
 
 // Mobile Search Component
 const MobileSearch: React.FC<{
@@ -153,11 +151,7 @@ const MobileMenu: React.FC<{
           {user && (
             <div className="text-center pb-6 border-b border-white/10">
               <div className="relative inline-block mb-4">
-                <img
-                  src={user.avatar || getAvatarFallback(user.username)}
-                  alt={user.name}
-                  className="w-20 h-20 rounded-full border-4 border-white/20"
-                />
+                <HeaderAvatar url={user.profilePictureUrl || user.profileImage} username={user.username} size="lg" />
               </div>
               <h3 className="text-white font-bold text-lg">{user.name}</h3>
               <p className="text-gray-400">@{user.username}</p>
@@ -214,6 +208,52 @@ const MobileMenu: React.FC<{
         </div>
       </div>
     </div>
+  );
+};
+
+const HeaderAvatar: React.FC<{ 
+  url: string | null | undefined; 
+  username?: string; 
+  size?: 'sm' | 'md' | 'lg';
+  onClick?: () => void;
+}> = ({ url, username, size = 'md', onClick }) => {
+  const [hasError, setHasError] = useState(false);
+  
+  useEffect(() => {
+    setHasError(false);
+  }, [url]);
+
+  const sizes = {
+    sm: 'w-8 h-8 text-sm',
+    md: 'w-12 h-12 text-xl',
+    lg: 'w-20 h-20 text-3xl'
+  };
+
+  const borders = {
+    sm: 'border-2',
+    md: 'border-2',
+    lg: 'border-4'
+  };
+
+  if (!url || hasError) {
+    return (
+      <div 
+        className={`${sizes[size]} rounded-full bg-gradient-to-br from-primary to-rose-600 flex items-center justify-center text-white font-bold uppercase ${borders[size]} border-white/20 shadow-xl cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all`}
+        onClick={onClick}
+      >
+        {(username || 'U').charAt(0)}
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={resolveAvatarUrl(url, username)}
+      alt={username || "User"}
+      className={`${sizes[size]} rounded-full ${borders[size]} border-white/20 object-cover cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all shadow-xl`}
+      onClick={onClick}
+      onError={() => setHasError(true)}
+    />
   );
 };
 
@@ -380,22 +420,14 @@ const Header: React.FC<HeaderProps> = ({ showTopNav = true }) => {
               {isAuthenticated && user && (
                 <div className="relative">
                   <button onClick={() => setShowProfileMenu(!showProfileMenu)} className="flex items-center space-x-2 p-1 text-gray-400 hover:text-white transition-colors">
-                    <img
-                      src={user.avatar || getAvatarFallback(user.username)}
-                      alt={user.name}
-                      className="w-8 h-8 rounded-full border-2 border-white/20"
-                    />
+                    <HeaderAvatar url={user.profilePictureUrl || user.profileImage} username={user.username} size="sm" />
                   </button>
 
                   {showProfileMenu && (
                     <div className="absolute right-0 top-full mt-2 w-64 bg-black/95 backdrop-blur-xl rounded-2xl border border-white/20 shadow-2xl">
                       <div className="p-4 border-b border-white/10">
                         <div className="flex items-center space-x-3">
-                          <img 
-                            src={user.avatar || getAvatarFallback(user.username)} 
-                            alt={user.name} 
-                            className="w-12 h-12 rounded-full border-2 border-white/20" 
-                          />
+                          <HeaderAvatar url={user.profilePictureUrl || user.profileImage} username={user.username} size="md" />
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-white truncate">{user.name}</p>
                             <p className="text-gray-400 text-sm">@{user.username}</p>

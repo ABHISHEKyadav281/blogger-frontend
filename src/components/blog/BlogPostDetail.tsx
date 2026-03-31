@@ -33,6 +33,48 @@ import { formatTimeAgo } from "../../utils/dateUtils";
 import api from "../../utils/api";
 import { API_BASE_URL } from "../../config";
 import Comments from "../comments/Comments";
+import { resolveAvatarUrl, resolveImageUrl } from "../../utils/urlUtils";
+
+const AuthorAvatar: React.FC<{ 
+  url: string | null | undefined; 
+  username?: string; 
+  size?: 'sm' | 'md' | 'lg';
+  onClick?: () => void;
+}> = ({ url, username, size = 'md', onClick }) => {
+  const [hasError, setHasError] = useState(false);
+  
+  // Re-enable image if URL changes
+  useEffect(() => {
+    setHasError(false);
+  }, [url]);
+
+  const sizes = {
+    sm: 'w-10 h-10 text-lg',
+    md: 'w-14 h-14 text-2xl',
+    lg: 'w-20 h-20 text-3xl'
+  };
+
+  if (!url || hasError) {
+    return (
+      <div 
+        className={`${sizes[size]} rounded-full bg-gradient-to-br from-primary to-rose-600 flex items-center justify-center text-white font-bold uppercase border-2 border-white/20 shadow-xl cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all`}
+        onClick={onClick}
+      >
+        {(username || 'U').charAt(0)}
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={resolveAvatarUrl(url, username)}
+      alt={username || "Author"}
+      className={`${sizes[size]} rounded-full border-2 border-white/20 object-cover cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all shadow-xl`}
+      onClick={onClick}
+      onError={() => setHasError(true)}
+    />
+  );
+};
 
 const BlogPostDetail: React.FC = () => {
   const { postId } = useParams<{ postId: string }>();
@@ -85,8 +127,7 @@ const BlogPostDetail: React.FC = () => {
     }
 
     if (post.coverImage) {
-      if (post.coverImage.startsWith('http')) return post.coverImage;
-      return `${API_BASE_URL}${post.coverImage.startsWith('/') ? '' : '/'}${post.coverImage}`;
+      return resolveImageUrl(post.coverImage);
     }
     
     return "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&h=600&fit=crop";
@@ -194,7 +235,7 @@ const BlogPostDetail: React.FC = () => {
           id: currentUser.id.toString(),
           name: currentUser.username,
           username: currentUser.username,
-          avatar: currentUser.avatar || 'https://via.placeholder.com/40'
+          profilePictureUrl: currentUser.profilePictureUrl || (currentUser as any).profileImage
         },
         parentId: parentId || null
       }));
@@ -311,31 +352,12 @@ const BlogPostDetail: React.FC = () => {
           {/* Author Section */}
           <div className="flex items-center justify-between pb-8 border-b border-white/10 mb-8">
             <div className="flex items-center space-x-4">
-              {post.author?.avatar ? (
-                <img
-                  src={post.author.avatar.startsWith('http') ? post.author.avatar : `${API_BASE_URL}${post.author.avatar.startsWith('/') ? '' : '/'}${post.author.avatar}`}
-                  alt={post.author?.name || "Author"}
-                  className="w-14 h-14 rounded-full border-2 border-white/20 object-cover cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all shadow-xl"
-                  onClick={() => navigate(`/profile/${post.author?.id}`)}
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    const parent = e.currentTarget.parentElement;
-                    if (parent) {
-                      const fallback = document.createElement('div');
-                      fallback.className = "w-14 h-14 rounded-full bg-gradient-to-br from-primary to-rose-600 flex items-center justify-center text-white font-bold text-2xl uppercase border-2 border-white/20 shadow-xl";
-                      fallback.innerText = (post.author?.username || post.author?.name || 'U').charAt(0);
-                      parent.appendChild(fallback);
-                    }
-                  }}
-                />
-              ) : (
-                <div 
-                  className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-rose-600 flex items-center justify-center text-white font-bold text-2xl uppercase border-2 border-white/20 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all shadow-xl"
-                  onClick={() => navigate(`/profile/${post.author?.id}`)}
-                >
-                  {(post.author?.username || post.author?.name || 'U').charAt(0)}
-                </div>
-              )}
+              <AuthorAvatar 
+                url={post.author?.profilePictureUrl || (post.author as any)?.profileImage} 
+                username={post.author?.username} 
+                size="md"
+                onClick={() => navigate(`/profile/${post.author?.id}`)} 
+              />
               <div>
                 <h3 
                   className="font-bold text-white text-lg cursor-pointer hover:text-primary transition-colors"
@@ -440,7 +462,7 @@ const BlogPostDetail: React.FC = () => {
                   id: currentUser?.id?.toString() || "guest",
                   name: currentUser?.username || "Guest",
                   username: currentUser?.username || "guest",
-                  avatar: currentUser?.avatar || "https://via.placeholder.com/40",
+                  profilePictureUrl: currentUser?.profilePictureUrl,
                   role: currentUser?.role
                 }}
                 comments={comments} 

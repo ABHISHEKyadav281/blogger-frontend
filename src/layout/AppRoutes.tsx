@@ -23,6 +23,7 @@ interface TokenPayload {
   sub: string;
   email: string;
   exp: number;
+  profilePictureUrl?: string;
 }
 
 export const AppRoutes = () => {
@@ -64,11 +65,11 @@ export const AppRoutes = () => {
         dispatch(
           loginSuccess({
             user: {
-              id: decoded.userId,
+              id: decoded.userId?.toString() || "",
               username: decoded.sub || "",
               email: decoded.email,
               name: "",
-              avatar: "",
+              profilePictureUrl: decoded.profilePictureUrl || (decoded as any).profileImage || (decoded as any).avatar || "",
               isVerified: false,
               role: 'user',
               stats: { posts: 0, followers: 0, following: 0 }

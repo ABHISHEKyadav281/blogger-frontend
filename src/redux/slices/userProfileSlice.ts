@@ -5,6 +5,7 @@ export interface UserProfileData {
     id: string | null;
     username: string;
     profileImage: string | null;
+    profilePictureUrl: string | null;
     email: string;
     firstName: string | null;
     lastName: string | null;

@@ -220,7 +220,7 @@ const postDetailSlice = createSlice({
                             id: userId,
                             name: 'You',
                             username: 'current_user',
-                            avatar: 'https://via.placeholder.com/40'
+                            profilePictureUrl: ''
                         }
                     };
                 } else {
@@ -238,7 +238,7 @@ const postDetailSlice = createSlice({
                             id: String(newComment.userId),
                             name: `user_${newComment.userId}`,
                             username: `user_${newComment.userId}`,
-                            avatar: 'https://via.placeholder.com/40'
+                            profilePictureUrl: ''
                         },
                         likes: 0,
                         dislikes: 0,
@@ -279,7 +279,7 @@ const postDetailSlice = createSlice({
                     id: String(c.userId),
                     name: `user_${c.userId}`,
                     username: `user_${c.userId}`,
-                    avatar: 'https://via.placeholder.com/40'
+                    profilePictureUrl: ''
                 },
                 likes: c.likes || 0,
                 dislikes: c.dislikes || 0,
@@ -299,7 +299,7 @@ const postDetailSlice = createSlice({
                         id: String(r.userId),
                         name: `user_${r.userId}`,
                         username: `user_${r.userId}`,
-                        avatar: 'https://via.placeholder.com/40'
+                        profilePictureUrl: ''
                     }
                 })) : undefined
             }));
@@ -321,7 +321,7 @@ const postDetailSlice = createSlice({
                     id: String(r.userId),
                     name: `user_${r.userId}`,
                     username: `user_${r.userId}`,
-                    avatar: 'https://via.placeholder.com/40'
+                    profilePictureUrl: ''
                 }
             })) : [];
 
